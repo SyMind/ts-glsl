@@ -16,10 +16,10 @@ statement_list :
     statement_no_new_scope
     statement_list statement_no_new_scope
 */
-export type ParseStatementList<T> = ParseStatementNoNewScope<T> extends [infer Statement, infer Tail]
-    ?  Trim<Tail> extends ''
+export type ParseStatementList<T> = ParseStatementNoNewScope<T> extends [infer Statement, infer Rest]
+    ?  Trim<Rest> extends ''
         ? [Statement]
-        : ParseStatementList<Tail> extends [...infer StatementList]
+        : ParseStatementList<Rest> extends [...infer StatementList]
             ? [Statement, ...StatementList]
             : never
     : never
@@ -62,16 +62,16 @@ export type ParseSimpleStatement<T> =
     | ParseJumpStatement<T>
 
 // TODO
-type ParseExpressionStatement<T> = ''
+type ParseExpressionStatement<T> = never
 
 // TODO
-type ParseSelectionStatement<T> = ''
+type ParseSelectionStatement<T> = never
 
 // TODO
-type ParseIterationStatement<T> = ''
+type ParseIterationStatement<T> = never
 
 // TODO
-type ParseJumpStatement<T> = ''
+type ParseJumpStatement<T> = never
 
 /*
 declaration_statement :
@@ -130,12 +130,16 @@ fully_specified_type :
     type_qualifier type_specifier
 */
 export type ParseFullySpecifiedType<T> = ParseTypeQualifier<T> extends [infer Qualifier, infer Rest]
-    ? ParseTypeSpecifier<Rest> extends [infer Specifer, infer Rest]
-        ? [FullySpecifiedType<Specifer & string, Qualifier & string>, Rest]
-        : never
-    : ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
-        ? [FullySpecifiedType<Specifer & string>, Rest]
-        : never
+    ? Qualifier extends string
+        ? ParseTypeSpecifier<Rest> extends [infer Specifer, infer Rest]
+            ? [FullySpecifiedType<Specifer, Qualifier>, Rest]
+            : never
+        : ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
+            ? Specifer extends string
+                ? [FullySpecifiedType<Specifer>, Rest]
+                : never
+            : never
+    : never
 
 /*
 parameter_type_specifier:
@@ -144,9 +148,7 @@ parameter_type_specifier:
     // TODO
     type_specifier LEFT_BRACKET constant_expression RIGHT_BRACKET
 */
-export type ParseParameterTypeSpecifier<T> = ParseTypeSpecifier<T> extends [infer Specifier, infer Rest]
-    ? [Specifier, Rest]
-    : never
+export type ParseParameterTypeSpecifier<T> = ParseTypeSpecifier<T>
 
 /*
 type_specifier :

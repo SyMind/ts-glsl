@@ -13,6 +13,6 @@ void main() {
     uv = position.xy;
 }
 `
-// Vertex.attributes.position = {type: 'vec3', name: 'position'}
+
 type Vertex = Parse<vertex>;
 ```

@@ -39,8 +39,8 @@ export type SingleDeclaration<
 }
 
 export type FullySpecifiedType<
-    Specifier extends string = '',
-    Qualifier extends string | undefined = undefined
+    Specifier = '',
+    Qualifier = undefined
 > = {
     specifier: Specifier;
     qualifier: Qualifier;
