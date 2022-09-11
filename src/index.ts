@@ -1,11 +1,16 @@
 import {Trim} from './string'
 import {
     Program,
-    StatementList,
     CompoundStatementWithScope,
     SingleDeclaration,
-    FullySpecifiedType
+    FullySpecifiedType,
+    EmptyExpressionStatement,
+    ParameterDeclarator
 } from './ast'
+
+type ScanIdentifier<T> = Trim<T> extends `${infer I} ${infer R}`
+    ? [I, R]
+    : [T, '']
 
 export type Parse<T> = ParseStatementList<T> extends [...infer Result]
     ? Program<Result>
@@ -38,11 +43,11 @@ compound_statement_with_scope:
     LEFT_BRACE RIGHT_BRACE
     LEFT_BRACE statement_list RIGHT_BRACE
 */
-type ParseCompoundStatementWithScope<T> = T extends `{${infer SL}}`
+export type ParseCompoundStatementWithScope<T> = Trim<T> extends `{${infer SL}}${infer R}`
     ? Trim<SL> extends ''
-        ? CompoundStatementWithScope<[]>
-        : Parse<SL> extends [...infer Result]
-            ? CompoundStatementWithScope<Result & StatementList>
+        ? [CompoundStatementWithScope<[]>, R]
+        : ParseStatementList<SL> extends [...infer Result]
+            ? [CompoundStatementWithScope<Result>, R]
             : never
     : never
 
@@ -61,8 +66,158 @@ export type ParseSimpleStatement<T> =
     | ParseIterationStatement<T>
     | ParseJumpStatement<T>
 
-// TODO
-type ParseExpressionStatement<T> = never
+/*
+expression_statement :
+    SEMICOLON
+    expression SEMICOLON
+*/
+type ParseExpressionStatement<T> = Trim<T> extends `${infer E};${infer R}`
+    ? E extends ''
+        ? [EmptyExpressionStatement, R]
+        : ParseExpression<T>
+    : never
+
+/*
+expression :
+    assignment_expression
+    expression COMMA assignment_expression
+*/
+type ParseExpression<T> = never
+
+/*
+assignment_expression :
+    conditional_expression
+    unary_expression assignment_operator assignment_expression
+*/
+type ParseAssignmentExpression<T> = never
+
+/*
+conditional_expression :
+    logical_or_expression
+    logical_or_expression QUESTION expression COLON assignment_expression
+*/
+type ParseConditionalExpression<T> = never
+
+/*
+logical_or_expression :
+    logical_xor_expression
+    logical_or_expression OR_OP logical_xor_expression
+*/
+type ParseLogicalOrExpression<T> = never
+
+/*
+logical_xor_expression :
+    logical_and_expression
+    logical_xor_expression XOR_OP logical_and_expression
+*/
+type ParseLogicalXorExpression<T> = never
+
+/*
+logical_and_expression :
+    inclusive_or_expression
+    logical_and_expression AND_OP inclusive_or_expression
+*/
+type ParseLogicalAndExpression<T> = never
+
+/*
+inclusive_or_expression :
+    exclusive_or_expression
+    inclusive_or_expression VERTICAL_BAR exclusive_or_expression
+*/
+type ParseInclusiveOrExpression<T> = never
+
+/*
+exclusive_or_expression :
+    and_expression
+    exclusive_or_expression CARET and_expression
+*/
+type ParseExclusiveOrExpression<T> = never
+
+/*
+and_expression :
+    equality_expression
+    and_expression AMPERSAND equality_expression
+*/
+type ParseAndExpression<T> = never
+
+/*
+equality_expression :
+    relational_expression
+    equality_expression EQ_OP relational_expression
+    equality_expression NE_OP relational_expression
+*/
+type ParseEqualityExpression<T> = never
+
+/*
+relational_expression :
+    shift_expression
+    relational_expression LEFT_ANGLE shift_expression
+    relational_expression RIGHT_ANGLE shift_expression
+    relational_expression LE_OP shift_expression
+    relational_expression GE_OP shift_expression
+*/
+type ParseRelationalExpression<T> = never
+
+/*
+shift_expression :
+    additive_expression
+    shift_expression LEFT_OP additive_expression
+    shift_expression RIGHT_OP additive_expression
+*/
+type ParseShiftExpression<T> = never
+
+/*
+additive_expression :
+    multiplicative_expression
+    additive_expression PLUS multiplicative_expression
+    additive_expression DASH multiplicative_expression
+*/
+type ParseAdditiveExpression<T> = never
+
+/*
+multiplicative_expression :
+    unary_expression
+    multiplicative_expression STAR unary_expression
+    multiplicative_expression SLASH unary_expression
+    multiplicative_expression PERCENT unary_expression
+*/
+type ParseMultiplicativeExpression<T> = never
+
+/*
+unary_expression:
+    postfix_expression
+    INC_OP unary_expression
+    DEC_OP unary_expression
+    unary_operator unary_expression
+*/
+type ParseUnaryExpression<T> = never
+
+/*
+postfix_expression:
+    primary_expression
+    postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET function_call
+    postfix_expression DOT FIELD_SELECTION
+    postfix_expression INC_OP
+    postfix_expression DEC_OP
+*/
+type ParsePostfixExpression<T> = never
+
+/*
+primary_expression:
+    variable_identifier
+    INTCONSTANT
+    FLOATCONSTANT
+    BOOLCONSTANT
+    LEFT_PAREN expression RIGHT_PAREN
+*/
+type ParsePrimaryExpression<T> = Trim<T> extends `(${infer E})`
+    ? ParseExpression<E>
+    : never
+
+/*
+variable_identifier: IDENTIFIER
+*/
+type ParseVariableIdentifier<T> = never
 
 // TODO
 type ParseSelectionStatement<T> = never
@@ -92,8 +247,102 @@ export type ParseDeclarationStatement<T> = Trim<T> extends `${infer Statement};$
         : [ParseFunctionPrototype<Statement>, Rest]
     : never
 
-// TODO
-type ParseFunctionPrototype<T> = never
+/*
+function_prototype :
+    function_declarator RIGHT_PAREN
+*/
+export type ParseFunctionPrototype<T> = ParseFunctionDeclarator<T> extends [infer Declarator, infer Rest]
+    ? Declarator extends unknown
+        ? never
+        : Rest extends `)${infer Rest}`
+            ? [Declarator, Rest]
+            : never
+    : never
+
+/*
+function_declarator :
+    function_header
+    function_header_with_parameters
+*/
+type ParseFunctionDeclarator<T> = ParseFunctionHeader<T>
+
+/*
+function_header_with_parameters :
+    function_header parameter_declaration
+    function_header_with_parameters COMMA parameter_declaration
+*/
+type ParseFunctionHeaderWithParameters<T> = ParseFunctionHeader<T> extends [infer Header, infer Rest]
+    ? Header extends never
+        ? never
+        : ParseParameterDeclaration<Rest>
+    : never
+
+/*
+function_header : fully_specified_type IDENTIFIER LEFT_PAREN
+*/
+export type ParseFunctionHeader<T> = ParseFullySpecifiedType<T> extends [infer Type, infer Rest]
+    ? Type extends never
+        ? never
+        : ScanIdentifier<Rest> extends [infer Identifier, infer Rest]
+            ? Identifier extends string
+                ? Rest extends `(${infer Rest}`
+                    ? [Type, Identifier, Rest]
+                    : never
+                : never
+            : never
+    : never
+
+/*
+parameter_declaration :
+    type_qualifier parameter_qualifier parameter_declarator
+    parameter_qualifier parameter_declarator
+    type_qualifier parameter_qualifier parameter_type_specifier
+    parameter_qualifier parameter_type_specifier
+*/
+export type ParseParameterDeclaration<T> = never
+// export type ParseParameterDeclaration<T> = ParseTypeQualifier<T> extends [infer Qualifier, infer Rest]
+//     ? Qualifier extends never
+//         ? never
+//         : ParseParameterQualifier<Rest> extends [infer ParamQualifier, infer Rest]
+//             ? ParamQualifier extends never
+//                 ? never
+//                 : [ParamQualifier, ]
+//     : never
+
+/*
+parameter_qualifier :
+    *empty*
+    IN
+    OUT
+    INOUT
+*/
+export type ParseParameterQualifier<T> = T extends `${infer Q} ${infer R}`
+    ? Q extends ParameterQualifier
+        ? [Q, R]
+        : ['', R]
+    : ['', T]
+
+type ParameterQualifier =
+    | 'in'
+    | 'out'
+    | 'inout'
+
+/*
+parameter_declarator :
+    type_specifier IDENTIFIER
+
+    // TODO
+    type_specifier IDENTIFIER LEFT_BRACKET constant_expression RIGHT_BRACKET
+*/
+export type ParseParameterDeclarator<T> = ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
+    ? Specifer extends never
+        ? never
+        : ScanIdentifier<Rest> extends [infer Identifier, infer Rest]
+            ? Identifier extends never
+                ? never
+                : [ParameterDeclarator<Specifer, Identifier>, Rest]
+            : never
+    : never
 
 /*
 init_declarator_list :

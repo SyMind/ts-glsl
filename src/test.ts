@@ -6,7 +6,10 @@ import {
     ParseDeclarationStatement,
     ParseFullySpecifiedType,
     ParseTypeQualifier,
-    ParseTypeSpecifier
+    ParseTypeSpecifier,
+    ParseCompoundStatementWithScope,
+    ParseFunctionHeader,
+    ParseFunctionPrototype
 } from '.'
 
 type Program1 = Parse<`
@@ -16,6 +19,13 @@ varying vec2 uv;
 type Program2 = Parse<`
 attribute vec3 position;
 vec2 uv;
+`>
+
+type statementWithScope1 = ParseCompoundStatementWithScope<`
+{
+    attribute vec3 position;
+    vec2 uv;
+}
 `>
 
 type StatementList1 = ParseStatementList<`
@@ -42,7 +52,14 @@ type Type2 = ParseFullySpecifiedType<'vec3 position'>;
 type Qualifier1 = ParseTypeQualifier<'attribute'>;
 type Qualifier2 = ParseTypeQualifier<'invariant varying'>;
 type Qualifier3 = ParseTypeQualifier<'attribute '>;
-// Wrong
-type Qualifier4 = ParseTypeQualifier<'vec3 position'>;
 
 type Specifier1 = ParseTypeSpecifier<'vec3 position'>;
+
+type FunctionHeader1 = ParseFunctionHeader<`
+void main() {
+    gl_Position = vec4(position, 1.0);
+    uv = position.xy;
+}
+`>;
+
+type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
