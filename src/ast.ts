@@ -1,16 +1,47 @@
-type SingleDeclaration<
-    Type extends FullySpecifiedType,
+export type Program<Body = []> = {
+    body: Body
+}
+
+export type StatementList = StatementNoNewScope[]
+
+export type StatementNoNewScope =
+    | CompoundStatementWithScope
+    | SimpleStatement
+
+export type CompoundStatementWithScope<Body extends StatementList = []> = {
+    body: Body
+}
+
+export type SimpleStatement =
+    | DeclarationStatement
+    // | ExpressionStatement
+    // | SelectionStatement
+    // | IterationStatement
+    // | JumpStatement
+
+export type DeclarationStatement =
+    | FunctionPrototype
+    | InitDeclaratorList
+
+export type FunctionPrototype = {
+
+}
+
+export type InitDeclaratorList = {
+}
+
+export type SingleDeclaration<
+    Type,
     Identifier = undefined
 > = {
-    specifier: Type['specifier'];
-    qualifier: Type['qualifier'];
+    type: Type;
     identifier: Identifier;
 }
 
-interface FullySpecifiedType<
-    Specifier = string,
-    Qualifier = undefined
-> {
+export type FullySpecifiedType<
+    Specifier extends string = '',
+    Qualifier extends string | undefined = undefined
+> = {
     specifier: Specifier;
     qualifier: Qualifier;
 }
