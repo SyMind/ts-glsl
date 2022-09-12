@@ -29,6 +29,14 @@ export type FunctionPrototype<Identifier = '', Params = [], Body = []> = {
     body: Body;
 }
 
+export type FunctionHeader<
+    Type = FullySpecifiedType,
+    Identifier = string
+> = {
+    type: Type;
+    identifier: Identifier;
+}
+
 export type ParameterDeclarator<Specifer, Identifier> = {
     specifer: Specifer;
     identifier: Identifier;
