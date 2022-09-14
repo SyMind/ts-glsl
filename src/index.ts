@@ -11,7 +11,11 @@ import {
     ContinueStatement,
     BreakStatement,
     ReturnStatement,
-    DiscardStatement
+    DiscardStatement,
+    WhileStatement,
+    DoWhileStatement,
+    BlockStatement,
+    ForStatement
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -235,8 +239,105 @@ type ParseVariableIdentifier<T> = ScanIdentifier<T>
 // TODO
 type ParseSelectionStatement<T> = never
 
-// TODO
-type ParseIterationStatement<T> = never
+/*
+iteration_statement :
+    WHILE LEFT_PAREN condition RIGHT_PAREN statement_no_new_scope
+    DO statement_with_scope WHILE LEFT_PAREN expression RIGHT_PAREN SEMICOLON
+    FOR LEFT_PAREN for_init_statement for_rest_statement RIGHT_PAREN statement_no_new_scope
+*/
+export type ParseIterationStatement<T> = T extends `${infer K} ${infer R}`
+    ? K extends 'while'
+        ? Trim<R> extends `(${infer C})${infer R}`
+            ? [ParseCondition<C>] extends [[infer C, '']]
+                ? [ParseStatementNoNewScope<R>] extends [[infer S, infer R]]
+                    ? [WhileStatement<C, S>, R]
+                    : never
+                : never
+            : never
+        : K extends 'do'
+            ? Trim<R> extends `${infer S}while(${infer E});${infer R}`
+                ? [ParseStatementWithScope<S>] extends [[infer S, '']]
+                    ? [ParseExpression<E>] extends [[infer E, '']]
+                        ? DoWhileStatement<E, S>
+                        : never
+                    : never
+                : never
+            : K extends 'for'
+                ? Trim<R> extends `(${infer F})${infer R1}`
+                    ? [ParseForInitStatement<F>] extends [[infer FI, infer R2]]
+                        ? [ParseForRestStatement<R2>] extends [[infer FR extends {test: any, update: any}, '']]
+                            ? [ParseStatementNoNewScope<R1>] extends [[infer S, infer R3]]
+                                ? ForStatement<FI, FR['test'], FR['update'], S>
+                                : never
+                            : never
+                        : never
+                    : never
+                : never
+    : never
+
+/*
+statement_with_scope :
+    compound_statement_no_new_scope
+    simple_statement
+*/
+type ParseStatementWithScope<T> =
+    | ParseCompoundStatementNoNewScope<T>
+    | ParseSimpleStatement<T>
+
+/*
+compound_statement_no_new_scope :
+    LEFT_BRACE RIGHT_BRACE
+    LEFT_BRACE statement_list RIGHT_BRACE
+*/
+type ParseCompoundStatementNoNewScope<T> = Trim<T> extends `{${infer S}}${infer R}`
+    ? Trim<S> extends ''
+        ? BlockStatement
+        : [ParseStatementList<S>] extends [[infer S, '']]
+            ? [BlockStatement<S>, R]
+            : never
+    : never
+
+/*
+for_init_statement :
+    expression_statement
+    declaration_statement
+*/
+export type ParseForInitStatement<T> =
+    | ParseExpressionStatement<T>
+    | ParseDeclarationStatement<T>
+
+/*
+for_rest_statement :
+    conditionopt SEMICOLON
+    conditionopt SEMICOLON expression
+*/
+export type ParseForRestStatement<T> = T extends `${infer C};${infer R}`
+    ? [ParseConditionopt<C>] extends [[infer C, '']]
+        ? [ParseExpression<R>] extends [[infer E, infer R]]
+            ? [{test: C, update: E}, R]
+            : never
+        : never
+    : never
+
+/*
+conditionopt :
+    condition
+    * empty *
+*/
+export type ParseConditionopt<T> = Trim<T> extends ''
+    ? [undefined, '']
+    : [ParseCondition<T>] extends [[infer C, '']]
+        ? [C, '']
+        : never
+
+/*
+condition :
+    expression
+    fully_specified_type IDENTIFIER EQUAL initializer
+*/
+type ParseCondition<T> =
+    | ParseFullySpecifiedType<T>
+    | ParseExpression<T>
 
 /*
 jump_statement :

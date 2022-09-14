@@ -83,14 +83,39 @@ export type AssignmentExpressionStatement<Right, Left, Operator> = {
 
 type Expression = any
 
-// jump_statement
+// compound statement no new scope
+
+export type BlockStatement<Body = []> = {
+    body: Body;
+}
+
+// iteration statement
+
+export type WhileStatement<Test, Body> = {
+    test: Test;
+    body: Body;
+}
+
+export type ForStatement<Init, Test, Update, Body> = {
+    init: Init
+    test: Test
+    update: Update
+    body: Body
+}
+
+export type DoWhileStatement<Test, Body> = {
+    test: Test;
+    body: Body;
+}
+
+// jump statement
 
 export type ContinueStatement = {}
 
 export type BreakStatement = {}
 
 export type ReturnStatement<Body extends Expression | null = null> = {
-    body: Body
+    body: Body;
 }
 
 export type DiscardStatement = {}
