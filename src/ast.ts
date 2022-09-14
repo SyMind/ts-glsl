@@ -23,10 +23,9 @@ export type DeclarationStatement =
     | FunctionPrototype
     | InitDeclaratorList
 
-export type FunctionPrototype<Identifier = '', Params = [], Body = []> = {
-    identifier: Identifier;
+export type FunctionPrototype<Header = FunctionHeader, Params = []> = {
+    header: Header;
     params: Params;
-    body: Body;
 }
 
 export type FunctionHeader<
@@ -40,6 +39,19 @@ export type FunctionHeader<
 export type ParameterDeclarator<Specifer, Identifier> = {
     specifer: Specifer;
     identifier: Identifier;
+}
+
+/*
+ type_qualifier parameter_qualifier parameter_declarator
+*/
+export type ParameterDeclaration<
+TypeQualifier,
+ParameterQualifier,
+ParameterDeclarator
+> = {
+    typeQualifier: TypeQualifier;
+    parameterQualifier: ParameterQualifier;
+    parameterDeclarator: ParameterDeclarator;
 }
 
 export type InitDeclaratorList = {
@@ -68,3 +80,17 @@ export type AssignmentExpressionStatement<Right, Left, Operator> = {
     right: Right;
     left: Left;
 }
+
+type Expression = any
+
+// jump_statement
+
+export type ContinueStatement = {}
+
+export type BreakStatement = {}
+
+export type ReturnStatement<Body extends Expression | null = null> = {
+    body: Body
+}
+
+export type DiscardStatement = {}

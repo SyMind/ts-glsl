@@ -61,5 +61,9 @@ void main() {
     uv = position.xy;
 }
 `>;
+type FunctionHeader2 = ParseFunctionHeader<`
+float rand(const in vec2 uv) {
+}
+`>;
 
 type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
