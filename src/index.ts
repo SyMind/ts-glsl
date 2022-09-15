@@ -16,7 +16,8 @@ import {
     BlockStatement,
     ForStatement,
     IfStatement,
-    MemberExpression
+    MemberExpression,
+    UpdateExpression
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -210,6 +211,15 @@ unary_expression:
 type ParseUnaryExpression<T> = never
 
 /*
+unary_operator :
+    PLUS
+    DASH
+    BANG
+    TILDE
+*/
+type UnaryOperator = '+' | '-' | '!' | '~';
+
+/*
 postfix_expression:
     primary_expression
     postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET function_call
@@ -225,16 +235,16 @@ export type ParsePostfixExpression<T> = Trim<T> extends `${infer P}[${infer I}]$
                 ? never
                 : [MemberExpression<P, I>, R]
             : never
-        : Trim<T> extends `${infer P}+${infer R1}`
+        : Trim<T> extends `${infer P}++${infer R1}`
             ? ParsePostfixExpression<P> extends [infer P, infer R2]
                 ? Trim<R2> extends ''
-                    ? [{left: P, operator: '+'}, R1]
+                    ? [UpdateExpression<'++', P>, R1]
                     : never
                 : never
-            :  Trim<T> extends `${infer P}-${infer R1}`
+            :  Trim<T> extends `${infer P}--${infer R1}`
                 ? ParsePostfixExpression<P> extends [infer P, infer R2]
                     ? Trim<R2> extends ''
-                        ? [{left: P, operator: '-'}, R1]
+                        ? [UpdateExpression<'--', P>, R1]
                         : never
                     : never
                 : ParsePrimaryExpression<T>

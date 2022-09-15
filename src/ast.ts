@@ -144,3 +144,9 @@ export type MemberExpression<Object, Property> = {
     object: Object;
     property: Property;
 }
+
+export type UpdateExpression<Operator, Argument> = {
+    brand: 'UpdateExpression';
+    operator: Operator;
+    argument: Argument;
+}

@@ -78,6 +78,6 @@ type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 
-expectTypeOf<ParsePostfixExpression<'foo+'>>().toMatchTypeOf<[{left: 'foo', operator: '+'}, '']>()
-expectTypeOf<ParsePostfixExpression<'foo-'>>().toMatchTypeOf<[{left: 'foo', operator: '-'}, '']>()
+expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[{left: 'foo', operator: '++'}, '']>()
+expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[{left: 'foo', operator: '--'}, '']>()
 expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()
