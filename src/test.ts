@@ -1,3 +1,4 @@
+import {expectTypeOf} from 'expect-type'
 import {
     Parse,
     ParseStatementList,
@@ -9,8 +10,14 @@ import {
     ParseTypeSpecifier,
     ParseCompoundStatementWithScope,
     ParseFunctionHeader,
-    ParseFunctionPrototype
+    ParseFunctionPrototype,
+    ParseSelectionStatement,
+    ParseSelectionRestStatement,
+    ParseStatementWithScope
 } from '.'
+import {BlockStatement} from './ast'
+
+function assert<T, E extends T>() {}
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -67,3 +74,8 @@ float rand(const in vec2 uv) {
 `>;
 
 type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
+
+type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
+// expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
+
+expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()

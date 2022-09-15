@@ -5,12 +5,8 @@ export type Program<Body = []> = {
 export type StatementList = StatementNoNewScope[]
 
 export type StatementNoNewScope =
-    | CompoundStatementWithScope
+    | BlockStatement
     | SimpleStatement
-
-export type CompoundStatementWithScope<Body = []> = {
-    body: Body
-}
 
 export type SimpleStatement =
     | DeclarationStatement
@@ -59,7 +55,7 @@ export type InitDeclaratorList = {
 
 export type SingleDeclaration<
     Type,
-    Identifier = undefined
+    Identifier = null
 > = {
     type: Type;
     identifier: Identifier;
@@ -67,7 +63,7 @@ export type SingleDeclaration<
 
 export type FullySpecifiedType<
     Specifier = '',
-    Qualifier = undefined
+    Qualifier = null
 > = {
     specifier: Specifier;
     qualifier: Qualifier;
@@ -83,9 +79,18 @@ export type AssignmentExpressionStatement<Right, Left, Operator> = {
 
 type Expression = any
 
+// selection statement
+
+export type IfStatement<Test, Consequent, Alternate = null> = {
+    test: Test;
+    consequent: Consequent;
+    alternate: Alternate;
+}
+
 // compound statement no new scope
 
 export type BlockStatement<Body = []> = {
+    brand: 'BlockStatement';
     body: Body;
 }
 

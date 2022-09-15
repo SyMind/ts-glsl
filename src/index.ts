@@ -1,7 +1,6 @@
 import {Trim} from './string'
 import {
     Program,
-    CompoundStatementWithScope,
     SingleDeclaration,
     FullySpecifiedType,
     EmptyExpressionStatement,
@@ -15,7 +14,8 @@ import {
     WhileStatement,
     DoWhileStatement,
     BlockStatement,
-    ForStatement
+    ForStatement,
+    IfStatement
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -61,9 +61,9 @@ compound_statement_with_scope:
 */
 export type ParseCompoundStatementWithScope<T> = Trim<T> extends `{${infer SL}}${infer R}`
     ? Trim<SL> extends ''
-        ? [CompoundStatementWithScope<[]>, R]
+        ? [BlockStatement<[]>, R]
         : ParseStatementList<SL> extends [...infer Result]
-            ? [CompoundStatementWithScope<Result>, R]
+            ? [BlockStatement<Result>, R]
             : never
     : never
 
@@ -236,8 +236,38 @@ variable_identifier :
 */
 type ParseVariableIdentifier<T> = ScanIdentifier<T>
 
-// TODO
-type ParseSelectionStatement<T> = never
+/*
+selection_statement :
+    IF LEFT_PAREN expression RIGHT_PAREN selection_rest_statement
+*/
+export type ParseSelectionStatement<T> = Trim<T> extends `if${infer R}`
+    ? Trim<R> extends `(${infer E})${infer R}`
+        ? [ParseExpression<E>] extends [[infer E, '']]
+            ? [ParseSelectionRestStatement<R>] extends [[infer S, infer R]]
+                ? S extends {consequent: infer C, alternate: infer A}
+                    ? [IfStatement<E, C, A>, R]
+                    :  S extends {consequent: infer C}
+                        ? [IfStatement<E, C>, R]
+                        : never
+                : never
+            : never
+        : never
+    : never
+
+/*
+selection_rest_statement :
+    statement_with_scope ELSE statement_with_scope
+    statement_with_scope
+*/
+export type ParseSelectionRestStatement<T> = Trim<T> extends `${infer S1}else${infer S2}`
+    ? [ParseStatementWithScope<S1>] extends [infer S1, '']
+        ? [ParseStatementWithScope<S2>] extends [infer S2, infer R]
+            ? [{consequent: S1, alternate: S2}, R]
+            : never
+        : never
+    : [ParseStatementWithScope<T>] extends [[infer S, infer R]]
+        ? [{consequent: S}, R]
+        : never
 
 /*
 iteration_statement :
@@ -280,7 +310,7 @@ statement_with_scope :
     compound_statement_no_new_scope
     simple_statement
 */
-type ParseStatementWithScope<T> =
+export type ParseStatementWithScope<T> =
     | ParseCompoundStatementNoNewScope<T>
     | ParseSimpleStatement<T>
 
@@ -291,7 +321,7 @@ compound_statement_no_new_scope :
 */
 type ParseCompoundStatementNoNewScope<T> = Trim<T> extends `{${infer S}}${infer R}`
     ? Trim<S> extends ''
-        ? BlockStatement
+        ? [BlockStatement<[]>, R]
         : [ParseStatementList<S>] extends [[infer S, '']]
             ? [BlockStatement<S>, R]
             : never
