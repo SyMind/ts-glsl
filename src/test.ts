@@ -14,8 +14,9 @@ import {
     ParseSelectionStatement,
     ParseStatementWithScope,
     ParsePostfixExpression,
+    ParseUnaryExpression
 } from '.'
-import {BlockStatement, MemberExpression} from './ast'
+import {BlockStatement, MemberExpression, UpdateExpression} from './ast'
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -78,6 +79,8 @@ type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 
-expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[{left: 'foo', operator: '++'}, '']>()
-expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[{left: 'foo', operator: '--'}, '']>()
+expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[UpdateExpression<false, "++", "foo">, '']>()
+expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[UpdateExpression<false, "--", "foo">, '']>()
 expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()
+
+expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, "++", "foo">, '']>()

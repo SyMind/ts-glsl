@@ -145,8 +145,9 @@ export type MemberExpression<Object, Property> = {
     property: Property;
 }
 
-export type UpdateExpression<Operator, Argument> = {
+export type UpdateExpression<Prefix, Operator, Argument> = {
     brand: 'UpdateExpression';
+    prefix: Prefix;
     operator: Operator;
     argument: Argument;
 }

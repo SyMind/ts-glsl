@@ -208,7 +208,21 @@ unary_expression:
     DEC_OP unary_expression
     unary_operator unary_expression
 */
-type ParseUnaryExpression<T> = never
+export type ParseUnaryExpression<T> = Trim<T> extends `++${infer R}`
+    ? [ParseUnaryExpression<R>] extends [[infer E, infer R]]
+        ? [UpdateExpression<true, '++', E>, R]
+        : never
+    : Trim<T> extends `--${infer U}`
+        ? [ParseUnaryExpression<U>] extends [[infer E, infer R]]
+            ? [UpdateExpression<true, '--', E>, R]
+            : never
+        : Trim<T> extends `${infer O} ${infer R}`
+            ? O extends UnaryOperator
+                ? [ParseUnaryExpression<R>] extends [[infer E, infer R]]
+                    ? [UpdateExpression<true, '--', E>, R]
+                    : never
+                : never
+            : ParsePostfixExpression<T>
 
 /*
 unary_operator :
@@ -238,13 +252,13 @@ export type ParsePostfixExpression<T> = Trim<T> extends `${infer P}[${infer I}]$
         : Trim<T> extends `${infer P}++${infer R1}`
             ? ParsePostfixExpression<P> extends [infer P, infer R2]
                 ? Trim<R2> extends ''
-                    ? [UpdateExpression<'++', P>, R1]
+                    ? [UpdateExpression<false, '++', P>, R1]
                     : never
                 : never
             :  Trim<T> extends `${infer P}--${infer R1}`
                 ? ParsePostfixExpression<P> extends [infer P, infer R2]
                     ? Trim<R2> extends ''
-                        ? [UpdateExpression<'--', P>, R1]
+                        ? [UpdateExpression<false, '--', P>, R1]
                         : never
                     : never
                 : ParsePrimaryExpression<T>
