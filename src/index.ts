@@ -17,7 +17,8 @@ import {
     ForStatement,
     IfStatement,
     MemberExpression,
-    UpdateExpression
+    UpdateExpression,
+    BinaryExpression
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -199,7 +200,31 @@ multiplicative_expression :
     multiplicative_expression SLASH unary_expression
     multiplicative_expression PERCENT unary_expression
 */
-type ParseMultiplicativeExpression<T> = never
+export type ParseMultiplicativeExpression<T> = Trim<T> extends `${infer M}*${infer R1}`
+    ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
+                ? [BinaryExpression<'*', M, U>, R3]
+                : never
+            : never
+        : never
+    : Trim<T> extends `${infer M}/${infer R1}`
+        ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
+            ? Trim<R2> extends ''
+                ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
+                    ? [BinaryExpression<'/', M, U>, R3]
+                    : never
+                : never
+            : never
+        : Trim<T> extends `${infer M}%${infer R1}`
+            ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
+                ? Trim<R2> extends ''
+                    ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
+                        ? [BinaryExpression<'%', M, U>, R3]
+                        : never
+                    : never
+                : never
+            : ParseUnaryExpression<T>
 
 /*
 unary_expression:

@@ -14,9 +14,10 @@ import {
     ParseSelectionStatement,
     ParseStatementWithScope,
     ParsePostfixExpression,
-    ParseUnaryExpression
+    ParseUnaryExpression,
+    ParseMultiplicativeExpression
 } from '.'
-import {BlockStatement, MemberExpression, UpdateExpression} from './ast'
+import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression} from './ast'
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -84,3 +85,5 @@ expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[UpdateExpression<
 expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()
 
 expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, "++", "foo">, '']>()
+
+expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpression<'*', 'a', 'b'>, '']>()
