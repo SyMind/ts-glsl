@@ -12,12 +12,10 @@ import {
     ParseFunctionHeader,
     ParseFunctionPrototype,
     ParseSelectionStatement,
-    ParseSelectionRestStatement,
-    ParseStatementWithScope
+    ParseStatementWithScope,
+    ParsePostfixExpression,
 } from '.'
-import {BlockStatement} from './ast'
-
-function assert<T, E extends T>() {}
+import {BlockStatement, MemberExpression} from './ast'
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -79,3 +77,7 @@ type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
 // expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
+
+expectTypeOf<ParsePostfixExpression<'foo+'>>().toMatchTypeOf<[{left: 'foo', operator: '+'}, '']>()
+expectTypeOf<ParsePostfixExpression<'foo-'>>().toMatchTypeOf<[{left: 'foo', operator: '-'}, '']>()
+expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()

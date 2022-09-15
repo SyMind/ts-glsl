@@ -115,12 +115,32 @@ export type DoWhileStatement<Test, Body> = {
 
 // jump statement
 
-export type ContinueStatement = {}
+export type ContinueStatement = {
+    brand: 'ContinueStatement';
+}
 
-export type BreakStatement = {}
+export type BreakStatement = {
+    brand: 'BreakStatement';
+}
 
 export type ReturnStatement<Body extends Expression | null = null> = {
+    brand: 'ReturnStatement';
     body: Body;
 }
 
-export type DiscardStatement = {}
+export type DiscardStatement = {
+    brand: 'DiscardStatement';
+}
+
+export type BinaryExpression<Operator, Left, Right> = {
+    brand: 'BinaryExpression';
+    operator: Operator;
+    left: Left;
+    right: Right;
+}
+
+export type MemberExpression<Object, Property> = {
+    brand: 'MemberExpression';
+    object: Object;
+    property: Property;
+}

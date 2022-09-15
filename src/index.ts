@@ -15,7 +15,8 @@ import {
     DoWhileStatement,
     BlockStatement,
     ForStatement,
-    IfStatement
+    IfStatement,
+    MemberExpression
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -216,7 +217,28 @@ postfix_expression:
     postfix_expression INC_OP
     postfix_expression DEC_OP
 */
-type ParsePostfixExpression<T> = never
+export type ParsePostfixExpression<T> = Trim<T> extends `${infer P}[${infer I}]${infer R}`
+    ? 1
+    : Trim<T> extends `${infer P}.${infer F}`
+        ? ScanIdentifier<F> extends [infer I, infer R]
+            ? I extends ''
+                ? never
+                : [MemberExpression<P, I>, R]
+            : never
+        : Trim<T> extends `${infer P}+${infer R1}`
+            ? ParsePostfixExpression<P> extends [infer P, infer R2]
+                ? Trim<R2> extends ''
+                    ? [{left: P, operator: '+'}, R1]
+                    : never
+                : never
+            :  Trim<T> extends `${infer P}-${infer R1}`
+                ? ParsePostfixExpression<P> extends [infer P, infer R2]
+                    ? Trim<R2> extends ''
+                        ? [{left: P, operator: '-'}, R1]
+                        : never
+                    : never
+                : ParsePrimaryExpression<T>
+
 
 /*
 primary_expression:
@@ -226,9 +248,9 @@ primary_expression:
     BOOLCONSTANT
     LEFT_PAREN expression RIGHT_PAREN
 */
-type ParsePrimaryExpression<T> = Trim<T> extends `(${infer E})`
-    ? ParseExpression<E>
-    : never
+type ParsePrimaryExpression<T> = Trim<T> extends `(${infer E})${infer R}`
+    ? [ParseExpression<E>, R]
+    : ScanIdentifier<T>
 
 /*
 variable_identifier :
