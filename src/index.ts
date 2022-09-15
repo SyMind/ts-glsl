@@ -175,7 +175,39 @@ relational_expression :
     relational_expression LE_OP shift_expression
     relational_expression GE_OP shift_expression
 */
-type ParseRelationalExpression<T> = never
+export type ParseRelationalExpression<T> = Trim<T> extends `${infer R}<=${infer R1}`
+    ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
+                ? [BinaryExpression<'<=', R, S>, R3]
+                : never
+            : never
+        : never
+    : Trim<T> extends `${infer R}>=${infer R1}`
+        ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
+            ? Trim<R2> extends ''
+                ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
+                    ? [BinaryExpression<'>=', R, S>, R3]
+                    : never
+                : never
+            : never
+        : Trim<T> extends `${infer R}<${infer R1}`
+            ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
+                ? Trim<R2> extends ''
+                    ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
+                        ? [BinaryExpression<'<', R, S>, R3]
+                        : never
+                    : never
+                : never
+            : Trim<T> extends `${infer R}>${infer R1}`
+                ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
+                    ? Trim<R2> extends ''
+                        ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
+                            ? [BinaryExpression<'>', R, S>, R3]
+                            : never
+                        : never
+                    : never
+                : ParseShiftExpression<T>
 
 /*
 shift_expression :

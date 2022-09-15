@@ -17,7 +17,8 @@ import {
     ParseUnaryExpression,
     ParseMultiplicativeExpression,
     ParseAdditiveExpression,
-    ParseShiftExpression
+    ParseShiftExpression,
+    ParseRelationalExpression
 } from '.'
 import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression} from './ast'
 
@@ -93,3 +94,5 @@ expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpres
 expectTypeOf<ParseAdditiveExpression<'a+b'>>().toMatchTypeOf<[BinaryExpression<'+', 'a', 'b'>, '']>()
 
 expectTypeOf<ParseShiftExpression<'a>>b'>>().toMatchTypeOf<[BinaryExpression<'>>', 'a', 'b'>, '']>()
+
+expectTypeOf<ParseRelationalExpression<'a>=b'>>().toMatchTypeOf<[BinaryExpression<'>=', 'a', 'b'>, '']>()
