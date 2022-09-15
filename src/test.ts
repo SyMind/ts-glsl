@@ -53,11 +53,11 @@ attribute vec3 position;
 varying vec2 uv;
 `>
 
-type Declaration1 = ParseSingleDeclaration<'attribute vec3 position'>;
-type Declaration2 = ParseSingleDeclaration<'vec3 position'>;
+expectTypeOf<ParseSingleDeclaration<'attribute vec3 position'>>().toMatchTypeOf<{typeSpecifier: "vec3", typeQualifier: "attribute", identifier: "position"}>()
+expectTypeOf<ParseSingleDeclaration<'vec3 position'>>().toMatchTypeOf<{typeSpecifier: "vec3", typeQualifier: void, identifier: "position"}>()
 
-type Type1 = ParseFullySpecifiedType<'attribute vec3 position'>;
-type Type2 = ParseFullySpecifiedType<'vec3 position'>;
+expectTypeOf<ParseFullySpecifiedType<'attribute vec3'>>().toMatchTypeOf<[{typeSpecifier: "vec3", typeQualifier: "attribute"}, '']>()
+expectTypeOf<ParseFullySpecifiedType<'vec3'>>().toMatchTypeOf<[{typeSpecifier: "vec3"}, '']>()
 
 type Qualifier1 = ParseTypeQualifier<'attribute'>;
 type Qualifier2 = ParseTypeQualifier<'invariant varying'>;

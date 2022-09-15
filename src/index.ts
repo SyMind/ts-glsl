@@ -1,8 +1,8 @@
 import {Trim} from './string'
 import {
     Program,
+    Statement,
     SingleDeclaration,
-    FullySpecifiedType,
     EmptyExpressionStatement,
     ParameterDeclarator,
     FunctionHeader,
@@ -33,8 +33,10 @@ type ScanIdentifier<T> =
     Trim<T> extends `${infer Token} ${infer Tail}` ? [Token, Tail] :
     [Trim<T>, '']
 
-export type Parse<T> = ParseStatementList<T> extends [...infer Result]
-    ? Program<Result>
+export type Parse<T> = ParseStatementList<T> extends [...infer SL]
+    ? SL extends Statement[]
+        ? Program<SL>
+        : never
     : never
 
 /*
@@ -42,12 +44,14 @@ statement_list :
     statement_no_new_scope
     statement_list statement_no_new_scope
 */
-export type ParseStatementList<T> = ParseStatementNoNewScope<T> extends [infer Statement, infer Rest]
-    ?  Trim<Rest> extends ''
-        ? [Statement]
-        : ParseStatementList<Rest> extends [...infer StatementList]
-            ? [Statement, ...StatementList]
-            : never
+export type ParseStatementList<T> = ParseStatementNoNewScope<T> extends [infer S, infer R]
+    ? S extends Statement
+        ? Trim<R> extends ''
+            ? [S]
+            : [ParseStatementList<R>] extends [[...infer SL]]
+                ? [S, ...SL]
+                : never
+        : never
     : never
 
 /*
@@ -67,8 +71,10 @@ compound_statement_with_scope:
 export type ParseCompoundStatementWithScope<T> = Trim<T> extends `{${infer SL}}${infer R}`
     ? Trim<SL> extends ''
         ? [BlockStatement<[]>, R]
-        : ParseStatementList<SL> extends [...infer Result]
-            ? [BlockStatement<Result>, R]
+        : ParseStatementList<SL> extends [...infer SL]
+            ? SL extends Statement[]
+                ? [BlockStatement<SL>, R]
+                : never
             : never
     : never
 
@@ -664,7 +670,7 @@ type ParseJumpStatement<T> = T extends `${infer J};${infer R}`
                     : never
     : T extends `${infer J} ${infer R}`
         ? Trim<J> extends 'return'
-            ? [ParseExpression<R>] extends [[infer E, infer R]]
+            ? ParseExpression<R> extends [infer E, infer R]
                 ? [ReturnStatement<E>, R]
                 : never
             : never
@@ -697,9 +703,9 @@ export type ParseFunctionPrototype<T> = T extends `${infer F})${infer R}`
     ? ParseFunctionDeclarator<F> extends [infer Declarator, infer Rest]
         ? Trim<Rest> extends ''
             ? ParseParameterDeclaration<Rest>
-            : void
-        : void
-    : void
+            : never
+        : never
+    : never
 
 /*
 function_declarator :
@@ -709,8 +715,8 @@ function_declarator :
 type ParseFunctionDeclarator<T> = ParseFunctionHeader<T> extends [infer Header, infer Rest]
     ? Trim<Rest> extends ''
         ? FunctionPrototype<Header>
-        : void
-    : void
+        : never
+    : never
 
 /*
 function_header_with_parameters :
@@ -736,8 +742,8 @@ function_header : fully_specified_type IDENTIFIER LEFT_PAREN
 export type ParseFunctionHeader<T> = ParseFullySpecifiedType<T> extends [infer Type, infer Rest]
     ? Rest extends `${infer I}(${infer R}`
         ? [FunctionHeader<Type, I>, R]
-        : void
-    : void
+        : never
+    : never
 
 /*
 parameter_declaration :
@@ -750,9 +756,9 @@ export type ParseParameterDeclaration<T> = ParseTypeQualifier<T> extends [infer 
     ? ParseParameterQualifier<Rest> extends [infer PQualifier, infer Rest]
         ? ParseParameterDeclarator<Rest> extends [infer PDeclarator, infer Rest]
             ? never // TODO
-            : void
-        : void
-    : void
+            : never
+        : never
+    : never
 
 /*
 parameter_qualifier :
@@ -782,8 +788,8 @@ parameter_declarator :
 export type ParseParameterDeclarator<T> = ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
     ? ScanIdentifier<Rest> extends [infer Identifier, infer Rest]
         ? [ParameterDeclarator<Specifer, Identifier>, Rest]
-        : void
-    : void
+        : never
+    : never
 
 /*
 init_declarator_list :
@@ -806,26 +812,50 @@ single_declaration :
     fully_specified_type IDENTIFIER EQUAL initializer
     INVARIANT IDENTIFIER
 */
-export type ParseSingleDeclaration<T> = ParseFullySpecifiedType<T> extends [infer Type, infer Rest]
-    ? Trim<Rest> extends ''
-        ? SingleDeclaration<Type>
-        : Rest extends `${infer I}`
-            ? SingleDeclaration<Type, I>
-            : void
-    : void
+export type ParseSingleDeclaration<T> = ParseFullySpecifiedType<T> extends [infer T, infer R]
+    ? Trim<R> extends ''
+        ? T extends {typeSpecifier: infer S, typeQualifier: infer Q}
+            ? S extends string
+                ? Q extends string
+                    ? SingleDeclaration<S, Q, void>
+                    : never
+                : never
+            : T extends {typeSpecifier: infer S}
+                ? S extends string
+                    ? SingleDeclaration<S, void, void>
+                    : never
+                : never
+        : Trim<R> extends `${infer I}`
+            ? T extends {typeSpecifier: infer S, typeQualifier: infer Q}
+                ? S extends string
+                    ? Q extends string
+                        ? SingleDeclaration<S, Q, I>
+                        : never
+                    : never
+                : T extends {typeSpecifier: infer S}
+                    ? S extends string
+                        ? SingleDeclaration<S, void, I>
+                        : never
+                    : never
+            : never
+    : never
 
 /*
 fully_specified_type :
     type_specifier
     type_qualifier type_specifier
 */
-export type ParseFullySpecifiedType<T> = ParseTypeQualifier<T> extends [infer Qualifier, infer Rest]
-    ? ParseTypeSpecifier<Rest> extends [infer Specifer, infer Rest]
-        ? [FullySpecifiedType<Specifer, Qualifier>, Rest]
-        : void
-    : ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
-        ? [FullySpecifiedType<Specifer>, Rest]
-        : void
+export type ParseFullySpecifiedType<T> = ParseTypeQualifier<T> extends [infer Q, infer R]
+    ? Q extends string
+        ? ParseTypeSpecifier<R> extends [infer S, infer R]
+            ? [{typeSpecifier: S, typeQualifier: Q}, R]
+            : never
+        : ParseTypeSpecifier<T> extends [infer S, infer R]
+            ? S extends string
+                ? [{typeSpecifier: S}, R]
+                : never
+            : never
+    : never
 
 /*
 parameter_type_specifier:
@@ -833,7 +863,7 @@ parameter_type_specifier:
     type_specifier LEFT_BRACKET constant_expression RIGHT_BRACKET
 */
 export type ParseParameterTypeSpecifier<T> = T extends `[${infer C}]${infer R}`
-    ? [ParseConstantExpression<C>] extends [[infer ConstantExpression, infer Rest]]
+    ? ParseConstantExpression<C> extends [infer ConstantExpression, infer Rest]
         ? Rest extends ''
             ? [ConstantExpression, R]
             : never
