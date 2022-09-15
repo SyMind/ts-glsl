@@ -71,7 +71,7 @@ export type FullySpecifiedType<
 
 export type EmptyExpressionStatement = {}
 
-export type AssignmentExpressionStatement<Right, Left, Operator> = {
+export type AssignmentExpression<Operator, Right, Left> = {
     operator: Operator;
     right: Right;
     left: Left;
@@ -150,4 +150,10 @@ export type UpdateExpression<Prefix, Operator, Argument> = {
     prefix: Prefix;
     operator: Operator;
     argument: Argument;
+}
+
+export type ConditionalExpression<Test, Consequent, Alternate> = {
+    test: Test;
+    consequent: Consequent;
+    alternate: Alternate;
 }

@@ -18,7 +18,9 @@ import {
     IfStatement,
     MemberExpression,
     UpdateExpression,
-    BinaryExpression
+    BinaryExpression,
+    ConditionalExpression,
+    AssignmentExpression
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -101,63 +103,185 @@ expression :
     assignment_expression
     expression COMMA assignment_expression
 */
-type ParseExpression<T> = never
+export type ParseExpression<T> = [ParseAssignmentExpression<T>] extends [[infer A, infer R]]
+    ?  Trim<R> extends `,${infer R}`
+        ? [ParseExpression<R>] extends [[...infer E]]
+            ? [A, ...E]
+            : never
+        : [A]
+    : never
 
 /*
 assignment_expression :
     conditional_expression
     unary_expression assignment_operator assignment_expression
+
+assignment_operator:
+    EQUAL
+    MUL_ASSIGN
+    DIV_ASSIGN
+    MOD_ASSIGN
+    ADD_ASSIGN
+    SUB_ASSIGN
+    LEFT_ASSIGN
+    RIGHT_ASSIGN
+    AND_ASSIGN
+    XOR_ASSIGN
+    OR_ASSIGN
 */
-type ParseAssignmentExpression<T> = never
+export type ParseAssignmentExpression<T> = [ParseConditionalExpression<T>] extends [[infer C, infer R]]
+    ? [C, R]
+    : [ParseUnaryExpression<T>] extends [[infer U, infer R]]
+        ? Trim<R> extends `*=${infer R}`
+            ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                ? [AssignmentExpression<'*=', U, A>, R]
+                : never
+            : Trim<R> extends `/=${infer R}`
+                ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                    ? [AssignmentExpression<'/=', U, A>, R]
+                    : never
+                : Trim<R> extends `%=${infer R}`
+                    ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                        ? [AssignmentExpression<'%=', U, A>, R]
+                        : never
+                    : Trim<R> extends `+=${infer R}`
+                        ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                            ? [AssignmentExpression<'+=', U, A>, R]
+                            : never
+                        : Trim<R> extends `-=${infer R}`
+                            ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                ? [AssignmentExpression<'-=', U, A>, R]
+                                : never
+                            : Trim<R> extends `<<=${infer R}`
+                                ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                    ? [AssignmentExpression<'<<=', U, A>, R]
+                                    : never
+                                : Trim<R> extends `>>=${infer R}`
+                                    ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                        ? [AssignmentExpression<'>>=', U, A>, R]
+                                        : never
+                                    : Trim<R> extends `&=${infer R}`
+                                        ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                            ? [AssignmentExpression<'&=', U, A>, R]
+                                            : never
+                                        : Trim<R> extends `^=${infer R}`
+                                            ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                                ? [AssignmentExpression<'^=', U, A>, R]
+                                                : never
+                                            : Trim<R> extends `|=${infer R}`
+                                                ? [ParseAssignmentExpression<R>] extends [[infer A, R]]
+                                                    ? [AssignmentExpression<'|=', U, A>, R]
+                                                    : never
+                                                : never
+        : never
+                
 
 /*
 conditional_expression :
     logical_or_expression
     logical_or_expression QUESTION expression COLON assignment_expression
 */
-type ParseConditionalExpression<T> = never
+export type ParseConditionalExpression<T> = ParseLogicalOrExpression<T> extends [[infer L, infer R]]
+    ? Trim<R> extends `?${infer R}`
+        ? [ParseExpression<R>] extends [[infer E, infer R]]
+            ? Trim<R> extends `:${infer R}`
+                ? [ParseAssignmentExpression<R>] extends [[infer A, infer R]]
+                    ? [ConditionalExpression<L, E, A>, R]
+                    : never
+                : never
+            : never
+        : [L, R]
+    : never
 
 /*
 logical_or_expression :
     logical_xor_expression
     logical_or_expression OR_OP logical_xor_expression
 */
-type ParseLogicalOrExpression<T> = never
+export type ParseLogicalOrExpression<T> = Trim<T> extends `${infer O}||${infer R1}`
+    ? [ParseLogicalOrExpression<O>] extends [[infer O, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseLogicalXorExpression<R1>] extends [[infer L, infer R3]]
+                ? [BinaryExpression<'||', O, L>, R3]
+                : never
+            : never
+        : never
+    : ParseLogicalXorExpression<T>
 
 /*
 logical_xor_expression :
     logical_and_expression
     logical_xor_expression XOR_OP logical_and_expression
 */
-type ParseLogicalXorExpression<T> = never
+export type ParseLogicalXorExpression<T> = Trim<T> extends `${infer X}^^${infer R1}`
+    ? [ParseLogicalXorExpression<X>] extends [[infer X, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseLogicalAndExpression<R1>] extends [[infer L, infer R3]]
+                ? [BinaryExpression<'^^', X, L>, R3]
+                : never
+            : never
+        : never
+    : ParseLogicalAndExpression<T>
 
 /*
 logical_and_expression :
     inclusive_or_expression
     logical_and_expression AND_OP inclusive_or_expression
 */
-type ParseLogicalAndExpression<T> = never
+export type ParseLogicalAndExpression<T> = Trim<T> extends `${infer L}&&${infer R1}`
+    ? [ParseLogicalAndExpression<L>] extends [[infer L, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseInclusiveOrExpression<R1>] extends [[infer I, infer R3]]
+                ? [BinaryExpression<'&&', L, I>, R3]
+                : never
+            : never
+        : never
+    : ParseInclusiveOrExpression<T>
 
 /*
 inclusive_or_expression :
     exclusive_or_expression
     inclusive_or_expression VERTICAL_BAR exclusive_or_expression
 */
-type ParseInclusiveOrExpression<T> = never
+export type ParseInclusiveOrExpression<T> = Trim<T> extends `${infer I}|${infer R1}`
+    ? [ParseInclusiveOrExpression<I>] extends [[infer I, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseExclusiveOrExpression<R1>] extends [[infer E, infer R3]]
+                ? [BinaryExpression<'|', I, E>, R3]
+                : never
+            : never
+        : never
+    : ParseExclusiveOrExpression<T>
 
 /*
 exclusive_or_expression :
     and_expression
     exclusive_or_expression CARET and_expression
 */
-type ParseExclusiveOrExpression<T> = never
+export type ParseExclusiveOrExpression<T> = Trim<T> extends `${infer E}^${infer R1}`
+    ? [ParseExclusiveOrExpression<E>] extends [[infer E, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseAndExpression<R1>] extends [[infer A, infer R3]]
+                ? [BinaryExpression<'^', E, A>, R3]
+                : never
+            : never
+        : never
+    : ParseAndExpression<T>
 
 /*
 and_expression :
     equality_expression
     and_expression AMPERSAND equality_expression
 */
-type ParseAndExpression<T> = never
+export type ParseAndExpression<T> = Trim<T> extends `${infer A}&${infer R1}`
+    ? [ParseAndExpression<A>] extends [[infer A, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseEqualityExpression<R1>] extends [[infer E, infer R3]]
+                ? [BinaryExpression<'&', A, E>, R3]
+                : never
+            : never
+        : never
+    : ParseEqualityExpression<T>
 
 /*
 equality_expression :
@@ -165,7 +289,23 @@ equality_expression :
     equality_expression EQ_OP relational_expression
     equality_expression NE_OP relational_expression
 */
-type ParseEqualityExpression<T> = never
+export type ParseEqualityExpression<T> = Trim<T> extends `${infer E}==${infer R1}`
+    ? [ParseEqualityExpression<E>] extends [[infer E, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseRelationalExpression<R1>] extends [[infer R, infer R3]]
+                ? [BinaryExpression<'==', E, R>, R3]
+                : never
+            : never
+        : never
+    : Trim<T> extends `${infer E}!=${infer R1}`
+        ? [ParseEqualityExpression<E>] extends [[infer E, infer R2]]
+            ? Trim<R2> extends ''
+                ? [ParseRelationalExpression<R1>] extends [[infer R, infer R3]]
+                    ? [BinaryExpression<'!=', E, R>, R3]
+                    : never
+                : never
+            : never
+        : ParseRelationalExpression<T>
 
 /*
 relational_expression :
