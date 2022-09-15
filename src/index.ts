@@ -191,7 +191,23 @@ additive_expression :
     additive_expression PLUS multiplicative_expression
     additive_expression DASH multiplicative_expression
 */
-type ParseAdditiveExpression<T> = never
+export type ParseAdditiveExpression<T> = Trim<T> extends `${infer A}+${infer R1}`
+    ? [ParseAdditiveExpression<A>] extends [[infer A, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseMultiplicativeExpression<R1>] extends [[infer M, infer R3]]
+                ? [BinaryExpression<'+', A, M>, R3]
+                : never
+            : never
+        : never
+    : Trim<T> extends `${infer A}-${infer R1}`
+        ? [ParseAdditiveExpression<A>] extends [[infer A, infer R2]]
+            ? Trim<R2> extends ''
+                ? [ParseMultiplicativeExpression<R1>] extends [[infer M, infer R3]]
+                    ? [BinaryExpression<'-', A, M>, R3]
+                    : never
+                : never
+            : never
+        : ParseMultiplicativeExpression<T>
 
 /*
 multiplicative_expression :

@@ -15,7 +15,8 @@ import {
     ParseStatementWithScope,
     ParsePostfixExpression,
     ParseUnaryExpression,
-    ParseMultiplicativeExpression
+    ParseMultiplicativeExpression,
+    ParseAdditiveExpression
 } from '.'
 import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression} from './ast'
 
@@ -87,3 +88,5 @@ expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<
 expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, "++", "foo">, '']>()
 
 expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpression<'*', 'a', 'b'>, '']>()
+
+expectTypeOf<ParseAdditiveExpression<'a+b'>>().toMatchTypeOf<[BinaryExpression<'+', 'a', 'b'>, '']>()
