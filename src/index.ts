@@ -183,7 +183,23 @@ shift_expression :
     shift_expression LEFT_OP additive_expression
     shift_expression RIGHT_OP additive_expression
 */
-type ParseShiftExpression<T> = never
+export type ParseShiftExpression<T> = Trim<T> extends `${infer S}<<${infer R1}`
+    ? [ParseShiftExpression<S>] extends [[infer S, infer R2]]
+        ? Trim<R2> extends ''
+            ? [ParseAdditiveExpression<R1>] extends [[infer A, infer R3]]
+                ? [BinaryExpression<'<<', S, A>, R3]
+                : never
+            : never
+        : never
+    : Trim<T> extends `${infer S}>>${infer R1}`
+        ? [ParseShiftExpression<S>] extends [[infer S, infer R2]]
+            ? Trim<R2> extends ''
+                ? [ParseAdditiveExpression<R1>] extends [[infer A, infer R3]]
+                    ? [BinaryExpression<'>>', S, A>, R3]
+                    : never
+                : never
+            : never
+        : ParseAdditiveExpression<T>
 
 /*
 additive_expression :
