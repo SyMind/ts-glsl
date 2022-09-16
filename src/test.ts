@@ -1,4 +1,5 @@
 import {expectTypeOf} from 'expect-type'
+import {TrimLeft, TrimRight, Trim} from './string'
 import {
     Parse,
     ParseStatementList,
@@ -21,6 +22,17 @@ import {
     ParseRelationalExpression
 } from '.'
 import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression, Identifier} from './ast'
+
+// utils
+
+expectTypeOf<TrimLeft<' a'>>().toMatchTypeOf<'a'>()
+expectTypeOf<TrimLeft<'\na'>>().toMatchTypeOf<'a'>()
+
+expectTypeOf<TrimRight<'a\n'>>().toMatchTypeOf<'a'>()
+expectTypeOf<TrimRight<'a '>>().toMatchTypeOf<'a'>()
+
+expectTypeOf<Trim<'\na\n'>>().toMatchTypeOf<'a'>()
+expectTypeOf<Trim<' a '>>().toMatchTypeOf<'a'>()
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -80,6 +92,8 @@ type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
 
 type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
 // expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
+
+expectTypeOf<ParseRelationalExpression<'foo > 0'>>().toMatchTypeOf<[BinaryExpression<">", Identifier<"foo">, Identifier<"0">>, '']>()
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 

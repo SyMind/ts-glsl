@@ -1,8 +1,13 @@
-export type Trim<T> = T extends ` ${infer Rest}`
-    ? Trim<Rest>
-    : T extends `\n${infer Rest}`
-        ? Trim<Rest>
+export type TrimLeft<T> = T extends ` ${infer R}`
+    ? TrimLeft<R>
+    : T extends `\n${infer R}`
+        ? TrimLeft<R>
         : T;
 
-type A = Trim<' a'>
-type B = Trim<'\na'>
+export type TrimRight<T> = T extends `${infer R} `
+    ? TrimRight<R>
+    : T extends `${infer R}\n`
+        ? TrimRight<R>
+        : T;
+
+export type Trim<T> = TrimRight<TrimLeft<T>>

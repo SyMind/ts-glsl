@@ -66,7 +66,11 @@ export type SingleDeclaration<
 
 export type EmptyExpressionStatement = {}
 
-export type AssignmentExpression<Operator, Right, Left> = {
+export type AssignmentExpression<
+    Operator extends string = string,
+    Right extends Expression = Expression,
+    Left extends Expression = Expression
+> = {
     operator: Operator;
     right: Right;
     left: Left;
@@ -74,7 +78,12 @@ export type AssignmentExpression<Operator, Right, Left> = {
 
 // selection statement
 
-export type IfStatement<Test, Consequent, Alternate = void> = {
+export type IfStatement<
+    Test extends Expression[] = Expression[],
+    Consequent extends Expression = Expression,
+    Alternate extends Expression | void = void
+> = {
+    brand: 'IfStatement';
     test: Test;
     consequent: Consequent;
     alternate: Alternate;
