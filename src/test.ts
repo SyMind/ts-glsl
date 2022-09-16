@@ -20,7 +20,7 @@ import {
     ParseShiftExpression,
     ParseRelationalExpression
 } from '.'
-import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression} from './ast'
+import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression, Identifier} from './ast'
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -53,11 +53,11 @@ attribute vec3 position;
 varying vec2 uv;
 `>
 
-expectTypeOf<ParseSingleDeclaration<'attribute vec3 position'>>().toMatchTypeOf<{typeSpecifier: "vec3", typeQualifier: "attribute", identifier: "position"}>()
-expectTypeOf<ParseSingleDeclaration<'vec3 position'>>().toMatchTypeOf<{typeSpecifier: "vec3", typeQualifier: void, identifier: "position"}>()
+expectTypeOf<ParseSingleDeclaration<'attribute vec3 position'>>().toMatchTypeOf<{typeSpecifier: 'vec3', typeQualifier: 'attribute', identifier: 'position'}>()
+expectTypeOf<ParseSingleDeclaration<'vec3 position'>>().toMatchTypeOf<{typeSpecifier: 'vec3', typeQualifier: void, identifier: 'position'}>()
 
-expectTypeOf<ParseFullySpecifiedType<'attribute vec3'>>().toMatchTypeOf<[{typeSpecifier: "vec3", typeQualifier: "attribute"}, '']>()
-expectTypeOf<ParseFullySpecifiedType<'vec3'>>().toMatchTypeOf<[{typeSpecifier: "vec3"}, '']>()
+expectTypeOf<ParseFullySpecifiedType<'attribute vec3'>>().toMatchTypeOf<[{typeSpecifier: 'vec3', typeQualifier: 'attribute'}, '']>()
+expectTypeOf<ParseFullySpecifiedType<'vec3'>>().toMatchTypeOf<[{typeSpecifier: 'vec3'}, '']>()
 
 type Qualifier1 = ParseTypeQualifier<'attribute'>;
 type Qualifier2 = ParseTypeQualifier<'invariant varying'>;
@@ -83,16 +83,16 @@ type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 
-expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[UpdateExpression<false, "++", "foo">, '']>()
-expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[UpdateExpression<false, "--", "foo">, '']>()
+expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[UpdateExpression<false, '++', Identifier<'foo'>>, '']>()
+expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[UpdateExpression<false, '--', Identifier<'foo'>>, '']>()
 expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()
 
-expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, "++", "foo">, '']>()
+expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, '++', Identifier<'foo'>>, '']>()
 
-expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpression<'*', 'a', 'b'>, '']>()
+expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpression<'*', Identifier<'a'>, Identifier<'b'>>, '']>()
 
-expectTypeOf<ParseAdditiveExpression<'a+b'>>().toMatchTypeOf<[BinaryExpression<'+', 'a', 'b'>, '']>()
+expectTypeOf<ParseAdditiveExpression<'a+b'>>().toMatchTypeOf<[BinaryExpression<'+', Identifier<'a'>, Identifier<'b'>>, '']>()
 
-expectTypeOf<ParseShiftExpression<'a>>b'>>().toMatchTypeOf<[BinaryExpression<'>>', 'a', 'b'>, '']>()
+expectTypeOf<ParseShiftExpression<'a>>b'>>().toMatchTypeOf<[BinaryExpression<'>>', Identifier<'a'>, Identifier<'b'>>, '']>()
 
-expectTypeOf<ParseRelationalExpression<'a>=b'>>().toMatchTypeOf<[BinaryExpression<'>=', 'a', 'b'>, '']>()
+expectTypeOf<ParseRelationalExpression<'a>=b'>>().toMatchTypeOf<[BinaryExpression<'>=', Identifier<'a'>, Identifier<'b'>>, '']>()

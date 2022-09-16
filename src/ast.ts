@@ -130,7 +130,7 @@ export type DiscardStatement = {
 export type Expression =
     | BinaryExpression<string, any, any>
     | MemberExpression
-    | UpdateExpression
+    | UpdateExpression<boolean, string, any>
     | ConditionalExpression<any, any, any>
     | Identifier
 
@@ -162,7 +162,7 @@ export type MemberExpression<
 export type UpdateExpression<
     Prefix extends boolean = boolean,
     Operator extends string = string,
-    Argument extends boolean = boolean,
+    Argument extends Expression = Expression,
 > = {
     brand: 'UpdateExpression';
     prefix: Prefix;

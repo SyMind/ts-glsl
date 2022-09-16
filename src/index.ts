@@ -20,7 +20,9 @@ import {
     UpdateExpression,
     BinaryExpression,
     ConditionalExpression,
-    AssignmentExpression
+    AssignmentExpression,
+    Expression,
+    Identifier
 } from './ast'
 
 type ScanIdentifier<T> =
@@ -187,16 +189,22 @@ conditional_expression :
     logical_or_expression
     logical_or_expression QUESTION expression COLON assignment_expression
 */
-export type ParseConditionalExpression<T> = ParseLogicalOrExpression<T> extends [[infer L, infer R]]
-    ? Trim<R> extends `?${infer R}`
-        ? [ParseExpression<R>] extends [[infer E, infer R]]
-            ? Trim<R> extends `:${infer R}`
-                ? [ParseAssignmentExpression<R>] extends [[infer A, infer R]]
-                    ? [ConditionalExpression<L, E, A>, R]
+export type ParseConditionalExpression<T> = ParseLogicalOrExpression<T> extends [infer L, infer R]
+    ? L extends Expression
+        ? Trim<R> extends `?${infer R}`
+            ? ParseExpression<R> extends [infer E, infer R]
+                ? E extends Expression
+                    ? Trim<R> extends `:${infer R}`
+                        ? ParseAssignmentExpression<R> extends [infer A, infer R]
+                            ? A extends Expression
+                                ? [ConditionalExpression<L, E, A>, R]
+                                : never
+                            : never
+                        : never
                     : never
                 : never
-            : never
-        : [L, R]
+            : [L, R]
+        : never
     : never
 
 /*
@@ -205,10 +213,14 @@ logical_or_expression :
     logical_or_expression OR_OP logical_xor_expression
 */
 export type ParseLogicalOrExpression<T> = Trim<T> extends `${infer O}||${infer R1}`
-    ? [ParseLogicalOrExpression<O>] extends [[infer O, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseLogicalXorExpression<R1>] extends [[infer L, infer R3]]
-                ? [BinaryExpression<'||', O, L>, R3]
+    ? ParseLogicalOrExpression<O> extends [infer O, infer R2]
+        ? O extends Expression
+            ? Trim<R2> extends ''
+                ? ParseLogicalXorExpression<R1> extends [infer L, infer R3]
+                    ? L extends Expression
+                        ? [BinaryExpression<'||', O, L>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -220,10 +232,14 @@ logical_xor_expression :
     logical_xor_expression XOR_OP logical_and_expression
 */
 export type ParseLogicalXorExpression<T> = Trim<T> extends `${infer X}^^${infer R1}`
-    ? [ParseLogicalXorExpression<X>] extends [[infer X, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseLogicalAndExpression<R1>] extends [[infer L, infer R3]]
-                ? [BinaryExpression<'^^', X, L>, R3]
+    ? ParseLogicalXorExpression<X> extends [infer X, infer R2]
+        ? X extends Expression
+            ? Trim<R2> extends ''
+                ? ParseLogicalAndExpression<R1> extends [infer L, infer R3]
+                    ? L extends Expression
+                        ? [BinaryExpression<'^^', X, L>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -235,10 +251,14 @@ logical_and_expression :
     logical_and_expression AND_OP inclusive_or_expression
 */
 export type ParseLogicalAndExpression<T> = Trim<T> extends `${infer L}&&${infer R1}`
-    ? [ParseLogicalAndExpression<L>] extends [[infer L, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseInclusiveOrExpression<R1>] extends [[infer I, infer R3]]
-                ? [BinaryExpression<'&&', L, I>, R3]
+    ? ParseLogicalAndExpression<L> extends [infer L, infer R2]
+        ? L extends Expression
+            ? Trim<R2> extends ''
+                ? ParseInclusiveOrExpression<R1> extends [infer I, infer R3]
+                    ? I extends Expression
+                        ? [BinaryExpression<'&&', L, I>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -250,10 +270,14 @@ inclusive_or_expression :
     inclusive_or_expression VERTICAL_BAR exclusive_or_expression
 */
 export type ParseInclusiveOrExpression<T> = Trim<T> extends `${infer I}|${infer R1}`
-    ? [ParseInclusiveOrExpression<I>] extends [[infer I, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseExclusiveOrExpression<R1>] extends [[infer E, infer R3]]
-                ? [BinaryExpression<'|', I, E>, R3]
+    ? ParseInclusiveOrExpression<I> extends [infer I, infer R2]
+        ? I extends Expression
+            ? Trim<R2> extends ''
+                ? ParseExclusiveOrExpression<R1> extends [infer E, infer R3]
+                    ? E extends Expression
+                        ? [BinaryExpression<'|', I, E>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -265,10 +289,14 @@ exclusive_or_expression :
     exclusive_or_expression CARET and_expression
 */
 export type ParseExclusiveOrExpression<T> = Trim<T> extends `${infer E}^${infer R1}`
-    ? [ParseExclusiveOrExpression<E>] extends [[infer E, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseAndExpression<R1>] extends [[infer A, infer R3]]
-                ? [BinaryExpression<'^', E, A>, R3]
+    ? ParseExclusiveOrExpression<E> extends [infer E, infer R2]
+        ? E extends Expression
+            ? Trim<R2> extends ''
+                ? ParseAndExpression<R1> extends [infer A, infer R3]
+                    ? A extends Expression
+                        ? [BinaryExpression<'^', E, A>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -280,10 +308,14 @@ and_expression :
     and_expression AMPERSAND equality_expression
 */
 export type ParseAndExpression<T> = Trim<T> extends `${infer A}&${infer R1}`
-    ? [ParseAndExpression<A>] extends [[infer A, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseEqualityExpression<R1>] extends [[infer E, infer R3]]
-                ? [BinaryExpression<'&', A, E>, R3]
+    ? ParseAndExpression<A> extends [infer A, infer R2]
+        ? A extends Expression
+            ? Trim<R2> extends ''
+                ? ParseEqualityExpression<R1> extends [infer E, infer R3]
+                    ? E extends Expression
+                        ? [BinaryExpression<'&', A, E>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
@@ -296,18 +328,26 @@ equality_expression :
     equality_expression NE_OP relational_expression
 */
 export type ParseEqualityExpression<T> = Trim<T> extends `${infer E}==${infer R1}`
-    ? [ParseEqualityExpression<E>] extends [[infer E, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseRelationalExpression<R1>] extends [[infer R, infer R3]]
-                ? [BinaryExpression<'==', E, R>, R3]
+    ? ParseEqualityExpression<E> extends [infer E, infer R2]
+        ? E extends Expression
+            ? Trim<R2> extends ''
+                ? ParseRelationalExpression<R1> extends [infer R, infer R3]
+                    ? R extends Expression
+                        ? [BinaryExpression<'==', E, R>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
     : Trim<T> extends `${infer E}!=${infer R1}`
-        ? [ParseEqualityExpression<E>] extends [[infer E, infer R2]]
-            ? Trim<R2> extends ''
-                ? [ParseRelationalExpression<R1>] extends [[infer R, infer R3]]
-                    ? [BinaryExpression<'!=', E, R>, R3]
+        ? ParseEqualityExpression<E> extends [infer E, infer R2]
+            ? E extends Expression
+                ? Trim<R2> extends ''
+                    ? ParseRelationalExpression<R1> extends [infer R, infer R3]
+                        ? R extends Expression
+                            ? [BinaryExpression<'!=', E, R>, R3]
+                            : never
+                        : never
                     : never
                 : never
             : never
@@ -322,34 +362,50 @@ relational_expression :
     relational_expression GE_OP shift_expression
 */
 export type ParseRelationalExpression<T> = Trim<T> extends `${infer R}<=${infer R1}`
-    ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
-                ? [BinaryExpression<'<=', R, S>, R3]
+    ? ParseRelationalExpression<R> extends [infer R, infer R2]
+        ? R extends Expression
+            ? Trim<R2> extends ''
+                ? ParseShiftExpression<R1> extends [infer S, infer R3]
+                    ? S extends Expression
+                        ? [BinaryExpression<'<=', R, S>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
     : Trim<T> extends `${infer R}>=${infer R1}`
-        ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
-            ? Trim<R2> extends ''
-                ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
-                    ? [BinaryExpression<'>=', R, S>, R3]
+        ? ParseRelationalExpression<R> extends [infer R, infer R2]
+            ? R extends Expression
+                ? Trim<R2> extends ''
+                    ? ParseShiftExpression<R1> extends [infer S, infer R3]
+                        ? S extends Expression
+                            ? [BinaryExpression<'>=', R, S>, R3]
+                            : never
+                        : never
                     : never
                 : never
             : never
         : Trim<T> extends `${infer R}<${infer R1}`
-            ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
-                ? Trim<R2> extends ''
-                    ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
-                        ? [BinaryExpression<'<', R, S>, R3]
+            ? ParseRelationalExpression<R> extends [infer R, infer R2]
+                ? R extends Expression
+                    ? Trim<R2> extends ''
+                        ? ParseShiftExpression<R1> extends [infer S, infer R3]
+                            ? S extends Expression
+                                ? [BinaryExpression<'<', R, S>, R3]
+                                : never
+                            : never
                         : never
                     : never
                 : never
             : Trim<T> extends `${infer R}>${infer R1}`
-                ? [ParseRelationalExpression<R>] extends [[infer R, infer R2]]
-                    ? Trim<R2> extends ''
-                        ? [ParseShiftExpression<R1>] extends [[infer S, infer R3]]
-                            ? [BinaryExpression<'>', R, S>, R3]
+                ? ParseRelationalExpression<R> extends [infer R, infer R2]
+                    ? R extends Expression
+                        ? Trim<R2> extends ''
+                            ? ParseShiftExpression<R1> extends [infer S, infer R3]
+                                ? S extends Expression
+                                    ? [BinaryExpression<'>', R, S>, R3]
+                                    : never
+                                : never
                             : never
                         : never
                     : never
@@ -362,18 +418,26 @@ shift_expression :
     shift_expression RIGHT_OP additive_expression
 */
 export type ParseShiftExpression<T> = Trim<T> extends `${infer S}<<${infer R1}`
-    ? [ParseShiftExpression<S>] extends [[infer S, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseAdditiveExpression<R1>] extends [[infer A, infer R3]]
-                ? [BinaryExpression<'<<', S, A>, R3]
+    ? ParseShiftExpression<S> extends [infer S, infer R2]
+        ? S extends Expression
+            ? Trim<R2> extends ''
+                ? ParseAdditiveExpression<R1> extends [infer A, infer R3]
+                    ? A extends Expression
+                        ? [BinaryExpression<'<<', S, A>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
     : Trim<T> extends `${infer S}>>${infer R1}`
-        ? [ParseShiftExpression<S>] extends [[infer S, infer R2]]
-            ? Trim<R2> extends ''
-                ? [ParseAdditiveExpression<R1>] extends [[infer A, infer R3]]
-                    ? [BinaryExpression<'>>', S, A>, R3]
+        ? ParseShiftExpression<S> extends [infer S, infer R2]
+            ? S extends Expression
+                ? Trim<R2> extends ''
+                    ? ParseAdditiveExpression<R1> extends [infer A, infer R3]
+                        ? A extends Expression
+                            ? [BinaryExpression<'>>', S, A>, R3]
+                            : never
+                        : never
                     : never
                 : never
             : never
@@ -386,18 +450,26 @@ additive_expression :
     additive_expression DASH multiplicative_expression
 */
 export type ParseAdditiveExpression<T> = Trim<T> extends `${infer A}+${infer R1}`
-    ? [ParseAdditiveExpression<A>] extends [[infer A, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseMultiplicativeExpression<R1>] extends [[infer M, infer R3]]
-                ? [BinaryExpression<'+', A, M>, R3]
+    ? ParseAdditiveExpression<A> extends [infer A, infer R2]
+        ? A extends Expression
+            ? Trim<R2> extends ''
+                ? ParseMultiplicativeExpression<R1> extends [infer M, infer R3]
+                    ? M extends Expression
+                        ? [BinaryExpression<'+', A, M>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
     : Trim<T> extends `${infer A}-${infer R1}`
-        ? [ParseAdditiveExpression<A>] extends [[infer A, infer R2]]
-            ? Trim<R2> extends ''
-                ? [ParseMultiplicativeExpression<R1>] extends [[infer M, infer R3]]
-                    ? [BinaryExpression<'-', A, M>, R3]
+        ? ParseAdditiveExpression<A> extends [infer A, infer R2]
+            ? A extends Expression
+                ? Trim<R2> extends ''
+                    ? ParseMultiplicativeExpression<R1> extends [infer M, infer R3]
+                        ? M extends Expression
+                            ? [BinaryExpression<'-', A, M>, R3]
+                            : never
+                        : never
                     : never
                 : never
             : never
@@ -411,26 +483,38 @@ multiplicative_expression :
     multiplicative_expression PERCENT unary_expression
 */
 export type ParseMultiplicativeExpression<T> = Trim<T> extends `${infer M}*${infer R1}`
-    ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
-        ? Trim<R2> extends ''
-            ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
-                ? [BinaryExpression<'*', M, U>, R3]
+    ? ParseMultiplicativeExpression<M> extends [infer M, infer R2]
+        ? M extends Expression
+            ? Trim<R2> extends ''
+                ? ParseUnaryExpression<R1> extends [infer U, infer R3]
+                    ? U extends Expression
+                        ? [BinaryExpression<'*', M, U>, R3]
+                        : never
+                    : never
                 : never
             : never
         : never
     : Trim<T> extends `${infer M}/${infer R1}`
-        ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
-            ? Trim<R2> extends ''
-                ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
-                    ? [BinaryExpression<'/', M, U>, R3]
+        ? ParseMultiplicativeExpression<M> extends [infer M, infer R2]
+            ? M extends Expression
+                ? Trim<R2> extends ''
+                    ? ParseUnaryExpression<R1> extends [infer U, infer R3]
+                        ? U extends Expression
+                            ? [BinaryExpression<'/', M, U>, R3]
+                            : never
+                        : never
                     : never
                 : never
             : never
         : Trim<T> extends `${infer M}%${infer R1}`
-            ? [ParseMultiplicativeExpression<M>] extends [[infer M, infer R2]]
-                ? Trim<R2> extends ''
-                    ? [ParseUnaryExpression<R1>] extends [[infer U, infer R3]]
-                        ? [BinaryExpression<'%', M, U>, R3]
+            ? ParseMultiplicativeExpression<M> extends [infer M, infer R2]
+                ? M extends Expression
+                    ? Trim<R2> extends ''
+                        ? ParseUnaryExpression<R1> extends [infer U, infer R3]
+                            ? U extends Expression
+                                ? [BinaryExpression<'%', M, U>, R3]
+                                : never
+                            : never
                         : never
                     : never
                 : never
@@ -444,17 +528,23 @@ unary_expression:
     unary_operator unary_expression
 */
 export type ParseUnaryExpression<T> = Trim<T> extends `++${infer R}`
-    ? [ParseUnaryExpression<R>] extends [[infer E, infer R]]
-        ? [UpdateExpression<true, '++', E>, R]
+    ? ParseUnaryExpression<R> extends [infer E, infer R]
+        ? E extends Expression
+            ? [UpdateExpression<true, '++', E>, R]
+            : never
         : never
     : Trim<T> extends `--${infer U}`
-        ? [ParseUnaryExpression<U>] extends [[infer E, infer R]]
-            ? [UpdateExpression<true, '--', E>, R]
+        ? ParseUnaryExpression<U> extends [infer E, infer R]
+            ? E extends Expression
+                ? [UpdateExpression<true, '--', E>, R]
+                : never
             : never
         : Trim<T> extends `${infer O} ${infer R}`
             ? O extends UnaryOperator
-                ? [ParseUnaryExpression<R>] extends [[infer E, infer R]]
-                    ? [UpdateExpression<true, '--', E>, R]
+                ? ParseUnaryExpression<R> extends [infer E, infer R]
+                    ? E extends Expression
+                        ? [UpdateExpression<true, '--', E>, R]
+                        : never
                     : never
                 : never
             : ParsePostfixExpression<T>
@@ -479,21 +569,27 @@ postfix_expression:
 export type ParsePostfixExpression<T> = Trim<T> extends `${infer P}[${infer I}]${infer R}`
     ? 1
     : Trim<T> extends `${infer P}.${infer F}`
-        ? ScanIdentifier<F> extends [infer I, infer R]
+        ? ScanIdentifier<F> extends [infer I, infer R] // TODO 优化
             ? I extends ''
                 ? never
-                : [MemberExpression<P, I>, R]
+                : I extends string
+                    ? [MemberExpression<P, I>, R]
+                    : never
             : never
         : Trim<T> extends `${infer P}++${infer R1}`
             ? ParsePostfixExpression<P> extends [infer P, infer R2]
-                ? Trim<R2> extends ''
-                    ? [UpdateExpression<false, '++', P>, R1]
+                ? P extends Expression
+                    ? Trim<R2> extends ''
+                        ? [UpdateExpression<false, '++', P>, R1]
+                        : never
                     : never
                 : never
             :  Trim<T> extends `${infer P}--${infer R1}`
                 ? ParsePostfixExpression<P> extends [infer P, infer R2]
-                    ? Trim<R2> extends ''
-                        ? [UpdateExpression<false, '--', P>, R1]
+                    ? P extends Expression
+                        ? Trim<R2> extends ''
+                            ? [UpdateExpression<false, '--', P>, R1]
+                            : never
                         : never
                     : never
                 : ParsePrimaryExpression<T>
@@ -509,7 +605,11 @@ primary_expression:
 */
 type ParsePrimaryExpression<T> = Trim<T> extends `(${infer E})${infer R}`
     ? [ParseExpression<E>, R]
-    : ScanIdentifier<T>
+    : ScanIdentifier<T> extends [infer I, infer R]
+        ? I extends string
+            ? [Identifier<I>, R]
+            : never
+        : never
 
 /*
 variable_identifier :
@@ -523,8 +623,8 @@ selection_statement :
 */
 export type ParseSelectionStatement<T> = Trim<T> extends `if${infer R}`
     ? Trim<R> extends `(${infer E})${infer R}`
-        ? [ParseExpression<E>] extends [[infer E, '']]
-            ? [ParseSelectionRestStatement<R>] extends [[infer S, infer R]]
+        ? ParseExpression<E> extends [infer E, '']
+            ? ParseSelectionRestStatement<R> extends [infer S, infer R]
                 ? S extends {consequent: infer C, alternate: infer A}
                     ? [IfStatement<E, C, A>, R]
                     :  S extends {consequent: infer C}
@@ -671,7 +771,9 @@ type ParseJumpStatement<T> = T extends `${infer J};${infer R}`
     : T extends `${infer J} ${infer R}`
         ? Trim<J> extends 'return'
             ? ParseExpression<R> extends [infer E, infer R]
-                ? [ReturnStatement<E>, R]
+                ? E extends Expression
+                    ? [ReturnStatement<E>, R]
+                    : never
                 : never
             : never
         : never
