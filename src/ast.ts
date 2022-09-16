@@ -80,8 +80,8 @@ export type AssignmentExpression<
 
 export type IfStatement<
     Test extends Expression[] = Expression[],
-    Consequent extends Expression = Expression,
-    Alternate extends Expression | void = void
+    Consequent extends BlockStatement = BlockStatement,
+    Alternate extends BlockStatement | void = void
 > = {
     brand: 'IfStatement';
     test: Test;

@@ -650,20 +650,20 @@ selection_statement :
 */
 export type ParseSelectionStatement<T> = TrimLeft<T> extends `if${infer R}`
     ? TrimLeft<R> extends `(${infer E})${infer R}`
-        ? ParseExpression<Trim<E>> extends [infer E, '']
+        ? ParseExpression<Trim<E>> extends [...infer E]
             ? E extends Expression[]
                 ? ParseSelectionRestStatement<R> extends [infer S, infer R]
                     ? S extends {consequent: infer C, alternate: infer A}
-                        ? C extends Expression
-                            ? A extends Expression
+                        ? C extends BlockStatement
+                            ? A extends BlockStatement
                                 ? [IfStatement<E, C, A>, R]
-                                :  S extends {consequent: infer C}
-                                    ? C extends Expression
-                                        ? [IfStatement<E, C>, R]
-                                        : never
-                                    : never
+                                : never
                             : never
-                        : never
+                        : S extends {consequent: infer C}
+                            ? C extends BlockStatement
+                                ? [IfStatement<E, C>, R]
+                                : never
+                            : never
                     : never
                 : never
             : never

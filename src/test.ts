@@ -21,7 +21,14 @@ import {
     ParseShiftExpression,
     ParseRelationalExpression
 } from '.'
-import {BlockStatement, MemberExpression, UpdateExpression, BinaryExpression, Identifier} from './ast'
+import {
+    BlockStatement,
+    IfStatement,
+    MemberExpression,
+    UpdateExpression,
+    BinaryExpression,
+    Identifier
+} from './ast'
 
 // utils
 
@@ -90,8 +97,7 @@ float rand(const in vec2 uv) {
 
 type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
 
-type ForStatement1 = ParseSelectionStatement<'if (foo > 0) {}'>;
-// expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
+expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[IfStatement<[BinaryExpression<">", Identifier<"foo">, Identifier<"0">>], BlockStatement<[]>, void>, '']>()
 
 expectTypeOf<ParseRelationalExpression<'foo > 0'>>().toMatchTypeOf<[BinaryExpression<">", Identifier<"foo">, Identifier<"0">>, '']>()
 
