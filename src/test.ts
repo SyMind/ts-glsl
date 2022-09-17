@@ -2,7 +2,6 @@ import {expectTypeOf} from 'expect-type'
 import {TrimLeft, TrimRight, Trim} from './string'
 import {
     Parse,
-    ParseStatementList,
     ParseSimpleStatement,
     ParseSingleDeclaration,
     ParseDeclarationStatement,
@@ -27,6 +26,7 @@ import {
 import {
     BlockStatement,
     IfStatement,
+    SingleDeclaration,
     MemberExpression,
     UpdateExpression,
     BinaryExpression,
@@ -52,6 +52,7 @@ expectTypeOf<Trim<' a '>>().toMatchTypeOf<'a'>()
 expectTypeOf<ParseIdentifier<'foo'>>().toMatchTypeOf<[Identifier<'foo'>, '']>()
 expectTypeOf<ParseIdentifier<'foo1'>>().toMatchTypeOf<[Identifier<'foo1'>, '']>()
 expectTypeOf<ParseIdentifier<'foo+'>>().toMatchTypeOf<[Identifier<'foo'>, '+']>()
+expectTypeOf<ParseIdentifier<'attribute'>>().toMatchTypeOf<never>()
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -69,20 +70,12 @@ type statementWithScope1 = ParseCompoundStatementWithScope<`
 }
 `>
 
-type StatementList1 = ParseStatementList<`
+type StatementList1 = ParseSimpleStatement<`
 attribute vec3 position;
 varying vec2 uv;
 `>
 
-type SimpleStatement1 = ParseSimpleStatement<`
-attribute vec3 position;
-varying vec2 uv;
-`>
-
-type DeclarationStatement1 = ParseDeclarationStatement<`
-attribute vec3 position;
-varying vec2 uv;
-`>
+expectTypeOf<ParseDeclarationStatement<'attribute vec3 position;'>>().toMatchTypeOf<[SingleDeclaration<'vec3', 'attribute', 'position'>, '']>()
 
 expectTypeOf<ParseSingleDeclaration<'attribute vec3 position'>>().toMatchTypeOf<{typeSpecifier: 'vec3', typeQualifier: 'attribute', identifier: 'position'}>()
 expectTypeOf<ParseSingleDeclaration<'vec3 position'>>().toMatchTypeOf<{typeSpecifier: 'vec3', typeQualifier: void, identifier: 'position'}>()
@@ -90,11 +83,10 @@ expectTypeOf<ParseSingleDeclaration<'vec3 position'>>().toMatchTypeOf<{typeSpeci
 expectTypeOf<ParseFullySpecifiedType<'attribute vec3'>>().toMatchTypeOf<[{typeSpecifier: 'vec3', typeQualifier: 'attribute'}, '']>()
 expectTypeOf<ParseFullySpecifiedType<'vec3'>>().toMatchTypeOf<[{typeSpecifier: 'vec3'}, '']>()
 
-type Qualifier1 = ParseTypeQualifier<'attribute'>;
-type Qualifier2 = ParseTypeQualifier<'invariant varying'>;
-type Qualifier3 = ParseTypeQualifier<'attribute '>;
+expectTypeOf<ParseTypeQualifier<'attribute'>>().toMatchTypeOf<['attribute', '']>()
+expectTypeOf<ParseTypeQualifier<'invariant varying'>>().toMatchTypeOf<['invariant varying', '']>()
 
-type Specifier1 = ParseTypeSpecifier<'vec3 position'>;
+expectTypeOf<ParseTypeSpecifier<'vec3 position'>>().toMatchTypeOf<['vec3', 'position']>()
 
 type FunctionHeader1 = ParseFunctionHeader<`
 void main() {

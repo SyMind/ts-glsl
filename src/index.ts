@@ -66,7 +66,7 @@ type ScanIdentifier<T> = ScanIdentifierBeginning<TrimLeft<T>> extends [infer B, 
 
 // [A-Za-z_][A-Za-z_0-9]*
 export type ParseIdentifier<T> = ScanIdentifier<T> extends [infer I, infer R]
-    ? I extends ''
+    ? I extends '' | TypeQualifier
         ? never
         : I extends string
             ? [Identifier<I>, R]
@@ -82,8 +82,10 @@ export type ParseStatementList<T> = ParseStatementNoNewScope<T> extends [infer S
     ? S extends Statement
         ? TrimLeft<R> extends ''
             ? [S]
-            : [ParseStatementList<R>] extends [[...infer SL]]
-                ? [S, ...SL]
+            : ParseStatementList<R> extends [...infer SL]
+                ? SL extends Statement[]
+                    ? [S, ...SL]
+                    : never
                 : never
         : never
     : never
