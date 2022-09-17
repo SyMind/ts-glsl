@@ -23,13 +23,37 @@ import {
     BoolLiteral,
     IntLiteral,
     FloatLiteral,
-    ParameterDeclaration
+    ParameterDeclaration,
+    FunctionDefinition,
+    ProgramBody
 } from './ast'
 
-export type Parse<T> = ParseStatementList<T> extends [...infer SL]
-    ? SL extends Statement[]
+export type Parse<T> = ParseProgramBody<T> extends [...infer SL]
+    ? SL extends ProgramBody
         ? Program<SL>
         : never
+    : never
+
+export type ParseProgramBody<T> = ParseFunctionDefinition<T> extends [infer F, infer R]
+    ? F extends FunctionDefinition
+        ? TrimLeft<R> extends ''
+            ? [F]
+            : ParseProgramBody<R> extends [...infer B]
+                ? B extends ProgramBody
+                    ? [F, ...B]
+                    : never
+                : never
+        : ParseStatementNoNewScope<T> extends [infer S, infer R]
+            ? S extends Statement
+                ? TrimLeft<R> extends ''
+                    ? [S]
+                    : ParseProgramBody<R> extends [...infer B]
+                        ? B extends ProgramBody
+                            ? [S, ...B]
+                            : never
+                        : never
+                : never
+            : never
     : never
 
 type ScanIdentifierBeginning<T> = T extends `${infer F}${infer R}`
@@ -1144,5 +1168,20 @@ export type ParseTypeQualifier<T> = T extends `${infer Qualifier} ${infer Rest}`
 function_definition :
     function_prototype compound_statement_no_new_scope
 */
-// export type ParseFunctionDefinition<T> = ParseFunctionPrototype<T> extends [infer P, infer R]
-//     ? 
+export type ParseFunctionDefinition<T> = ParseFunctionPrototype<T> extends [infer FP, infer R]
+    ? FP extends {name: infer N, typeSpecifier: infer TS, typeQualifier: infer TQ, params: infer P}
+        ? TQ extends string | void
+            ? TS extends string
+                ? N extends Identifier
+                    ? P extends ParameterDeclaration[] | void
+                        ? ParseCompoundStatementNoNewScope<R> extends [infer B, infer R]
+                            ? B extends BlockStatement
+                                ? [FunctionDefinition<TQ, TS, N, P, B>, R]
+                                : never
+                            : never
+                        : never
+                    : never
+                : never
+            : never
+        : never
+    : never

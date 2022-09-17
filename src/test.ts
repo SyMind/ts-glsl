@@ -23,7 +23,8 @@ import {
     ParseBoolConstant,
     ParseIntConstant,
     ParseParameterDeclaration,
-    ParseParameterDeclarator
+    ParseParameterDeclarator,
+    ParseProgramBody
 } from '.'
 import {
     BlockStatement,
@@ -36,7 +37,8 @@ import {
     BoolLiteral,
     IntLiteral,
     FloatLiteral,
-    ParameterDeclaration
+    ParameterDeclaration,
+    FunctionDefinition
 } from './ast'
 
 // utils
@@ -57,19 +59,21 @@ expectTypeOf<ParseIdentifier<'foo1'>>().toMatchTypeOf<[Identifier<'foo1'>, '']>(
 expectTypeOf<ParseIdentifier<'foo+'>>().toMatchTypeOf<[Identifier<'foo'>, '+']>()
 expectTypeOf<ParseIdentifier<'attribute'>>().toMatchTypeOf<never>()
 
-type Program1 = Parse<`
+type Program1 = ParseProgramBody<`
 attribute vec3 position;
 varying vec2 uv;
+void main() {
+    gl_Position = vec4(position, 1.0);
+    uv = position.xy;
+}
 `>
 type Program2 = Parse<`
 attribute vec3 position;
-vec2 uv;
 `>
 
 type statementWithScope1 = ParseCompoundStatementWithScope<`
 {
     attribute vec3 position;
-    vec2 uv;
 }
 `>
 

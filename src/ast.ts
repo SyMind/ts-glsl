@@ -1,23 +1,26 @@
-export type Program<Body extends Statement[] = Statement[]> = {
+export type Program<Body extends ProgramBody = []> = {
     brand: 'Program';
     body: Body;
 }
 
+export type ProgramBody = (Statement | FunctionDefinition)[]
+
 export type Statement =
     | BlockStatement
     | SimpleStatement
-    | FunctionDefinition
 
 export type FunctionDefinition<
+    TypeQualifier extends string | void = string | void,
+    TypeSpecifier extends string = string,
     Name extends Identifier = Identifier,
-    Parameters extends ParameterDeclaration[] = [],
-    Type = any,
-    Body = any
+    Parameters extends ParameterDeclaration[] | void = ParameterDeclaration[] | void,
+    Body extends BlockStatement = BlockStatement
 > = {
     brand: 'FunctionDefinition';
+    typeQualifier: TypeQualifier;
+    typeSpecifier: TypeSpecifier;
     name: Name;
     parameters: Parameters;
-    type: Type;
     body: Body;
 }
 
@@ -96,7 +99,7 @@ export type IfStatement<
 
 // compound statement no new scope
 
-export type BlockStatement<Body = []> = {
+export type BlockStatement<Body = any> = {
     brand: 'BlockStatement';
     body: Body;
 }
