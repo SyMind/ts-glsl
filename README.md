@@ -1,11 +1,9 @@
 # ts-glsl
 
- 🚧 under construction.
-
-https://registry.khronos.org/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf
+In accordance with [GLSL ES Specification 1.0](https://registry.khronos.org/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf).
 
 ```typescript
-import { Parse } from "@codemix/ts-glsl";
+import { Parse } from 'ts-glsl';
 
 const vertex = `
 attribute vec3 position;
