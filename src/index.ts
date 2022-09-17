@@ -1,4 +1,4 @@
-import {TrimLeft, TrimRight, Trim} from './string'
+import {TrimLeft, TrimRight, Trim, Alphabet, NumberLiterals} from './string'
 import {
     Program,
     Statement,
@@ -22,23 +22,55 @@ import {
     ConditionalExpression,
     AssignmentExpression,
     Expression,
-    Identifier
+    Identifier,
+    BoolLiteral,
+    IntLiteral,
+    FloatLiteral
 } from './ast'
-
-type ScanIdentifier<T> =
-    TrimLeft<T> extends `${infer Token},${infer Tail}` ? [Token, Tail] :
-    TrimLeft<T> extends `${infer Token}(${infer Tail}` ? [Token, Tail] :
-    TrimLeft<T> extends `${infer Token})${infer Tail}` ? [Token, Tail] :
-    TrimLeft<T> extends `${infer Token};${infer Tail}` ? [Token, Tail] :
-    TrimLeft<T> extends `${infer Token})` ? [Token, ')'] :
-    TrimLeft<T> extends `${infer Token};` ? [Token, ';'] :
-    TrimLeft<T> extends `${infer Token} ${infer Tail}` ? [Token, Tail] :
-    [TrimLeft<T>, '']
 
 export type Parse<T> = ParseStatementList<T> extends [...infer SL]
     ? SL extends Statement[]
         ? Program<SL>
         : never
+    : never
+
+type ScanIdentifierBeginning<T> = T extends `${infer F}${infer R}`
+    ? F extends Alphabet
+        ? [F, R]
+        : ['', T]
+    : ['', T]
+
+type ScanIdentifierRest<T> = T extends `${infer I1}${infer R}`
+    ? I1 extends (Alphabet | NumberLiterals | '_')
+        ? ScanIdentifierRest<R> extends [infer I2, infer R]
+            ? I2 extends ''
+                ? [I1, R]
+                : I2 extends string
+                    ? [`${I1}${I2}`, R]
+                    : [I1, R]
+            : [I1, R]
+        : ['', T]
+    : ['', T]
+
+type ScanIdentifier<T> = ScanIdentifierBeginning<TrimLeft<T>> extends [infer B, infer R]
+    ? B extends ''
+        ? ['', R]
+        : B extends string
+            ? ScanIdentifierRest<R> extends [infer I, infer R]
+                ? I extends string
+                    ? [`${B}${I}`, R]
+                    : [B, R]
+                : [B, R]
+            : ['', R]
+    : ['', T]
+
+// [A-Za-z_][A-Za-z_0-9]*
+export type ParseIdentifier<T> = ScanIdentifier<T> extends [infer I, infer R]
+    ? I extends ''
+        ? never
+        : I extends string
+            ? [Identifier<I>, R]
+            : never
     : never
 
 /*
@@ -113,7 +145,7 @@ expression :
 */
 export type ParseExpression<T> = ParseAssignmentExpression<T> extends [infer A, infer R]
     ? A extends Expression
-        ?  TrimLeft<R> extends `,${infer R}`
+        ? TrimLeft<R> extends `,${infer R}`
             ? ParseExpression<R> extends [...infer E]
                 ? E extends Expression[]
                     ? [A, ...E]
@@ -127,7 +159,26 @@ export type ParseExpression<T> = ParseAssignmentExpression<T> extends [infer A, 
 assignment_expression :
     conditional_expression
     unary_expression assignment_operator assignment_expression
-
+*/
+export type ParseAssignmentExpression<T> = ParseConditionalExpression<T> extends [infer C, infer R]
+    ? C extends Expression
+        ? [C, R]
+        : ParseUnaryExpression<T> extends [infer U, infer R]
+            ? U extends Expression
+                ? ParseAssignmentOperator<R> extends [infer O, infer R]
+                    ? O extends string
+                        ? ParseAssignmentExpression<R> extends [infer A, infer R]
+                            ? A extends Expression
+                                ? [AssignmentExpression<'>>=', U, A>, R]
+                                : never
+                            : never
+                        : never
+                    : never
+                : never
+            : never
+    : never 
+    
+/*
 assignment_operator:
     EQUAL
     MUL_ASSIGN
@@ -141,75 +192,21 @@ assignment_operator:
     XOR_ASSIGN
     OR_ASSIGN
 */
-export type ParseAssignmentExpression<T> = ParseConditionalExpression<T> extends [infer C, infer R]
-    ? C extends Expression
-        ? [C, R]
-        : ParseUnaryExpression<T> extends [infer U, infer R]
-            ? U extends Expression
-                ? TrimLeft<R> extends `*=${infer R}`
-                    ? ParseAssignmentExpression<R> extends [infer A, R]
-                        ? A extends Expression
-                            ? [AssignmentExpression<'*=', U, A>, R]
+export type ParseAssignmentOperator<T> = TrimLeft<T> extends `<<=${infer R}`
+    ? ['<<=', R]
+    : TrimLeft<T> extends `>>=${infer R}`
+        ? ['>>=', R]
+        : TrimLeft<T> extends `${infer F}${infer R}`
+            ? F extends '='
+                ? ['=', R]
+                : F extends '*' | '/' | '%' | '+' | '-' | '&' | '^' | '|'
+                    ? R extends `${infer A}${infer R}`
+                        ? A extends '='
+                            ? [`${F}${A}`, R]
                             : never
                         : never
-                    : TrimLeft<R> extends `/=${infer R}`
-                        ? ParseAssignmentExpression<R> extends [infer A, R]
-                            ? A extends Expression
-                                ? [AssignmentExpression<'/=', U, A>, R]
-                                : never
-                            : never
-                        : TrimLeft<R> extends `%=${infer R}`
-                            ? ParseAssignmentExpression<R> extends [infer A, R]
-                                ? A extends Expression
-                                    ? [AssignmentExpression<'%=', U, A>, R]
-                                    : never
-                                : never
-                            : TrimLeft<R> extends `+=${infer R}`
-                                ? ParseAssignmentExpression<R> extends [infer A, R]
-                                    ? A extends Expression
-                                        ? [AssignmentExpression<'+=', U, A>, R]
-                                        : never
-                                    : never
-                                : TrimLeft<R> extends `-=${infer R}`
-                                    ? ParseAssignmentExpression<R> extends [infer A, R]
-                                        ? A extends Expression
-                                            ? [AssignmentExpression<'-=', U, A>, R]
-                                            : never
-                                        : never
-                                    : TrimLeft<R> extends `<<=${infer R}`
-                                        ? ParseAssignmentExpression<R> extends [infer A, R]
-                                            ? A extends Expression
-                                                ? [AssignmentExpression<'<<=', U, A>, R]
-                                                : never
-                                            : never
-                                        : TrimLeft<R> extends `>>=${infer R}`
-                                            ? ParseAssignmentExpression<R> extends [infer A, R]
-                                                ? A extends Expression
-                                                    ? [AssignmentExpression<'>>=', U, A>, R]
-                                                    : never
-                                                : never
-                                            : TrimLeft<R> extends `&=${infer R}`
-                                                ? ParseAssignmentExpression<R> extends [infer A, R]
-                                                    ? A extends Expression
-                                                        ? [AssignmentExpression<'&=', U, A>, R]
-                                                        : never
-                                                    : never
-                                                : TrimLeft<R> extends `^=${infer R}`
-                                                    ? ParseAssignmentExpression<R> extends [infer A, R]
-                                                        ? A extends Expression
-                                                            ? [AssignmentExpression<'^=', U, A>, R]
-                                                            : never
-                                                        : never
-                                                    : TrimLeft<R> extends `|=${infer R}`
-                                                        ? ParseAssignmentExpression<R> extends [infer A, R]
-                                                            ? A extends Expression
-                                                                ? [AssignmentExpression<'|=', U, A>, R]
-                                                                : never
-                                                            : never
-                                                        : never
-                : never
+                    : never
             : never
-    : never   
 
 /*
 conditional_expression :
@@ -389,49 +386,41 @@ relational_expression :
     relational_expression GE_OP shift_expression
 */
 export type ParseRelationalExpression<T> = TrimLeft<T> extends `${infer R}<=${infer R1}`
-    ? ParseRelationalExpression<TrimRight<R>> extends [infer R, infer R2]
+    ? ParseRelationalExpression<TrimRight<R>> extends [infer R, '']
         ? R extends Expression
-            ? TrimLeft<R2> extends ''
-                ? ParseShiftExpression<R1> extends [infer S, infer R3]
-                    ? S extends Expression
-                        ? [BinaryExpression<'<=', R, S>, R3]
-                        : never
+            ? ParseShiftExpression<R1> extends [infer S, infer R2]
+                ? S extends Expression
+                    ? [BinaryExpression<'<=', R, S>, R2]
                     : never
                 : never
             : never
         : never
     : TrimLeft<T> extends `${infer R}>=${infer R1}`
-        ? ParseRelationalExpression<TrimRight<R>> extends [infer R, infer R2]
+        ? ParseRelationalExpression<TrimRight<R>> extends [infer R, '']
             ? R extends Expression
-                ? TrimLeft<R2> extends ''
-                    ? ParseShiftExpression<R1> extends [infer S, infer R3]
-                        ? S extends Expression
-                            ? [BinaryExpression<'>=', R, S>, R3]
-                            : never
+                ? ParseShiftExpression<R1> extends [infer S, infer R2]
+                    ? S extends Expression
+                        ? [BinaryExpression<'>=', R, S>, R2]
                         : never
                     : never
                 : never
             : never
         : TrimLeft<T> extends `${infer R}<${infer R1}`
-            ? ParseRelationalExpression<TrimRight<R>> extends [infer R, infer R2]
+            ? ParseRelationalExpression<TrimRight<R>> extends [infer R, '']
                 ? R extends Expression
-                    ? TrimLeft<R2> extends ''
-                        ? ParseShiftExpression<R1> extends [infer S, infer R3]
-                            ? S extends Expression
-                                ? [BinaryExpression<'<', R, S>, R3]
-                                : never
+                    ? ParseShiftExpression<R1> extends [infer S, infer R2]
+                        ? S extends Expression
+                            ? [BinaryExpression<'<', R, S>, R2]
                             : never
                         : never
                     : never
                 : never
             : TrimLeft<T> extends `${infer R}>${infer R1}`
-                ? ParseRelationalExpression<TrimRight<R>> extends [infer R, infer R2]
+                ? ParseRelationalExpression<TrimRight<R>> extends [infer R, '']
                     ? R extends Expression
-                        ? TrimLeft<R2> extends ''
-                            ? ParseShiftExpression<R1> extends [infer S, infer R3]
-                                ? S extends Expression
-                                    ? [BinaryExpression<'>', R, S>, R3]
-                                    : never
+                        ? ParseShiftExpression<R1> extends [infer S, infer R2]
+                            ? S extends Expression
+                                ? [BinaryExpression<'>', R, S>, R2]
                                 : never
                             : never
                         : never
@@ -445,25 +434,21 @@ shift_expression :
     shift_expression RIGHT_OP additive_expression
 */
 export type ParseShiftExpression<T> = TrimLeft<T> extends `${infer S}<<${infer R1}`
-    ? ParseShiftExpression<S> extends [infer S, infer R2]
+    ? ParseShiftExpression<TrimRight<S>> extends [infer S, '']
         ? S extends Expression
-            ? TrimLeft<R2> extends ''
-                ? ParseAdditiveExpression<R1> extends [infer A, infer R3]
-                    ? A extends Expression
-                        ? [BinaryExpression<'<<', S, A>, R3]
-                        : never
+            ? ParseAdditiveExpression<R1> extends [infer A, infer R2]
+                ? A extends Expression
+                    ? [BinaryExpression<'<<', S, A>, R2]
                     : never
                 : never
             : never
         : never
     : TrimLeft<T> extends `${infer S}>>${infer R1}`
-        ? ParseShiftExpression<S> extends [infer S, infer R2]
+        ? ParseShiftExpression<TrimRight<S>> extends [infer S, '']
             ? S extends Expression
-                ? TrimLeft<R2> extends ''
-                    ? ParseAdditiveExpression<R1> extends [infer A, infer R3]
-                        ? A extends Expression
-                            ? [BinaryExpression<'>>', S, A>, R3]
-                            : never
+                ? ParseAdditiveExpression<R1> extends [infer A, infer R2]
+                    ? A extends Expression
+                        ? [BinaryExpression<'>>', S, A>, R2]
                         : never
                     : never
                 : never
@@ -573,7 +558,7 @@ export type ParseUnaryExpression<T> = TrimLeft<T> extends `++${infer R}`
                         ? [UpdateExpression<true, '--', E>, R]
                         : never
                     : never
-                : never
+                : ParsePostfixExpression<T>
             : ParsePostfixExpression<T>
 
 /*
@@ -588,18 +573,19 @@ type UnaryOperator = '+' | '-' | '!' | '~';
 /*
 postfix_expression:
     primary_expression
-    postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET function_call
+    postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET
+    function_call
     postfix_expression DOT FIELD_SELECTION
     postfix_expression INC_OP
     postfix_expression DEC_OP
 */
 export type ParsePostfixExpression<T> = TrimLeft<T> extends `${infer P}[${infer I}]${infer R}`
-    ? 1
+    ? 1 // TODO
     : TrimLeft<T> extends `${infer P}.${infer F}`
-        ? ScanIdentifier<F> extends [infer I, infer R] // TODO 优化
+        ? ParseIdentifier<F> extends [infer I, infer R] // TODO 优化
             ? I extends ''
                 ? never
-                : I extends string
+                : I extends Identifier
                     ? [MemberExpression<P, I>, R]
                     : never
             : never
@@ -621,28 +607,69 @@ export type ParsePostfixExpression<T> = TrimLeft<T> extends `${infer P}[${infer 
                     : never
                 : ParsePrimaryExpression<T>
 
+export type ParseBoolConstant<T> = T extends `true${infer R}`
+    ? [BoolLiteral<'true'>, R]
+    : T extends `false${infer R}`
+        ? [BoolLiteral<'false'>, R]
+        : never
+
+type ScanIntConstant<T> = TrimLeft<T> extends `${infer I1}${infer R}`
+    ? I1 extends NumberLiterals
+        ? ScanIdentifierRest<R> extends [infer I2, infer R]
+            ? I2 extends ''
+                ? [I1, R]
+                : I2 extends string
+                    ? [`${I1}${I2}`, R]
+                    : [I1, R]
+            : [I1, R]
+        : ['', T]
+    : ['', T]
+
+export type ParseIntConstant<T> = ScanIntConstant<T> extends [infer I, infer R]
+    ? I extends ''
+        ? never
+        : I extends string
+            ? [IntLiteral<I>, R]
+            : never
+    : never
+
+export type ParseFloatConstant<T> = ScanIntConstant<T> extends [infer I1, infer R]
+    ? I1 extends ''
+        ? never
+        : I1 extends string
+            ? R extends `.${infer R}`
+                ? ScanIntConstant<R> extends [infer I2, infer R]
+                    ? I2 extends ''
+                        ? never
+                        : I2 extends string
+                            ? [FloatLiteral<`${I1}.${I2}`>, R]
+                            : never
+                    : never
+                : never
+            : never
+    : never
 
 /*
 primary_expression:
     variable_identifier
     INTCONSTANT
-    FLOATCONSTANT
+    FLOATCONSTANT // TODO
     BOOLCONSTANT
     LEFT_PAREN expression RIGHT_PAREN
 */
-type ParsePrimaryExpression<T> = TrimLeft<T> extends `(${infer E})${infer R}`
-    ? [ParseExpression<E>, R]
-    : ScanIdentifier<T> extends [infer I, infer R]
-        ? I extends string
-            ? [Identifier<I>, R]
+export type ParsePrimaryExpression<T> = TrimLeft<T> extends `(${infer E})${infer R}`
+    ? ParseExpression<TrimRight<E>> extends [infer E, '']
+        ? E extends Expression
+            ? [E, R]
             : never
         : never
+    : ParseBoolConstant<T> | ParseIntConstant<T> | ParseVariableIdentifier<T>
 
 /*
 variable_identifier :
     IDENTIFIER
 */
-type ParseVariableIdentifier<T> = ScanIdentifier<T>
+type ParseVariableIdentifier<T> = ParseIdentifier<T>
 
 /*
 selection_statement :
@@ -655,15 +682,11 @@ export type ParseSelectionStatement<T> = TrimLeft<T> extends `if${infer R}`
                 ? ParseSelectionRestStatement<R> extends [infer S, infer R]
                     ? S extends {consequent: infer C, alternate: infer A}
                         ? C extends BlockStatement
-                            ? A extends BlockStatement
+                            ? A extends BlockStatement | void
                                 ? [IfStatement<E, C, A>, R]
                                 : never
                             : never
-                        : S extends {consequent: infer C}
-                            ? C extends BlockStatement
-                                ? [IfStatement<E, C>, R]
-                                : never
-                            : never
+                        : never
                     : never
                 : never
             : never
@@ -682,7 +705,7 @@ export type ParseSelectionRestStatement<T> = TrimLeft<T> extends `${infer S1}els
             : never
         : never
     : [ParseStatementWithScope<T>] extends [[infer S, infer R]]
-        ? [{consequent: S}, R]
+        ? [{consequent: S, alternate: void}, R]
         : never
 
 /*
@@ -837,10 +860,8 @@ function_prototype :
     function_declarator RIGHT_PAREN
 */
 export type ParseFunctionPrototype<T> = T extends `${infer F})${infer R}`
-    ? ParseFunctionDeclarator<F> extends [infer Declarator, infer Rest]
-        ? TrimLeft<Rest> extends ''
-            ? ParseParameterDeclaration<Rest>
-            : never
+    ? ParseFunctionDeclarator<TrimRight<F>> extends [infer D, '']
+        ? [D, R]
         : never
     : never
 
@@ -849,9 +870,9 @@ function_declarator :
     function_header
     function_header_with_parameters
 */
-type ParseFunctionDeclarator<T> = ParseFunctionHeader<T> extends [infer Header, infer Rest]
-    ? TrimLeft<Rest> extends ''
-        ? FunctionPrototype<Header>
+type ParseFunctionDeclarator<T> = ParseFunctionHeader<T> extends [infer H, infer R]
+    ? R extends ''
+        ? FunctionPrototype<H>
         : never
     : never
 
@@ -874,11 +895,14 @@ type ParseFunctionHeaderWithParameters<T> = ParseFunctionHeader<T> extends [infe
     : never
 
 /*
-function_header : fully_specified_type IDENTIFIER LEFT_PAREN
+function_header :
+    fully_specified_type IDENTIFIER LEFT_PAREN
 */
-export type ParseFunctionHeader<T> = ParseFullySpecifiedType<T> extends [infer Type, infer Rest]
-    ? Rest extends `${infer I}(${infer R}`
-        ? [FunctionHeader<Type, I>, R]
+export type ParseFunctionHeader<T> = ParseFullySpecifiedType<T> extends [infer T, infer R]
+    ? T extends {typeSpecifier: infer S, typeQualifier: infer Q}
+        ? R extends `${infer I}(${infer R}`
+            ? [FunctionHeader<{name: I, typeSpecifier: S, typeQualifier: Q}, I>, R]
+            : never
         : never
     : never
 
@@ -922,9 +946,9 @@ parameter_declarator :
     // TODO
     type_specifier IDENTIFIER LEFT_BRACKET constant_expression RIGHT_BRACKET
 */
-export type ParseParameterDeclarator<T> = ParseTypeSpecifier<T> extends [infer Specifer, infer Rest]
-    ? ScanIdentifier<Rest> extends [infer Identifier, infer Rest]
-        ? [ParameterDeclarator<Specifer, Identifier>, Rest]
+export type ParseParameterDeclarator<T> = ParseTypeSpecifier<T> extends [infer S, infer R]
+    ? ParseIdentifier<R> extends [infer I, infer R]
+        ? [ParameterDeclarator<S, I>, R]
         : never
     : never
 
@@ -953,27 +977,19 @@ export type ParseSingleDeclaration<T> = ParseFullySpecifiedType<T> extends [infe
     ? TrimLeft<R> extends ''
         ? T extends {typeSpecifier: infer S, typeQualifier: infer Q}
             ? S extends string
-                ? Q extends string
+                ? Q extends string | void
                     ? SingleDeclaration<S, Q, void>
                     : never
                 : never
-            : T extends {typeSpecifier: infer S}
-                ? S extends string
-                    ? SingleDeclaration<S, void, void>
-                    : never
-                : never
+            : never
         : TrimLeft<R> extends `${infer I}`
             ? T extends {typeSpecifier: infer S, typeQualifier: infer Q}
                 ? S extends string
-                    ? Q extends string
+                    ? Q extends string | void
                         ? SingleDeclaration<S, Q, I>
                         : never
                     : never
-                : T extends {typeSpecifier: infer S}
-                    ? S extends string
-                        ? SingleDeclaration<S, void, I>
-                        : never
-                    : never
+                : never
             : never
     : never
 
@@ -989,7 +1005,7 @@ export type ParseFullySpecifiedType<T> = ParseTypeQualifier<T> extends [infer Q,
             : never
         : ParseTypeSpecifier<T> extends [infer S, infer R]
             ? S extends string
-                ? [{typeSpecifier: S}, R]
+                ? [{typeSpecifier: S, typeQualifier: void}, R]
                 : never
             : never
     : never
@@ -1100,3 +1116,9 @@ export type ParseTypeQualifier<T> = T extends `${infer Qualifier} ${infer Rest}`
             ? [TrimLeft<Q>, '']
             : never
         : never
+
+/*
+function_definition :
+    function_prototype compound_statement_no_new_scope
+*/
+// export type ParseFunctionDefinition<T> = ParseFunctionPrototype<T> extends []

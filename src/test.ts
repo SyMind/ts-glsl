@@ -11,7 +11,6 @@ import {
     ParseTypeSpecifier,
     ParseCompoundStatementWithScope,
     ParseFunctionHeader,
-    ParseFunctionPrototype,
     ParseSelectionStatement,
     ParseStatementWithScope,
     ParsePostfixExpression,
@@ -19,7 +18,11 @@ import {
     ParseMultiplicativeExpression,
     ParseAdditiveExpression,
     ParseShiftExpression,
-    ParseRelationalExpression
+    ParseRelationalExpression,
+    ParseIdentifier,
+    ParseFloatConstant,
+    ParseBoolConstant,
+    ParseIntConstant
 } from '.'
 import {
     BlockStatement,
@@ -27,7 +30,10 @@ import {
     MemberExpression,
     UpdateExpression,
     BinaryExpression,
-    Identifier
+    Identifier,
+    BoolLiteral,
+    IntLiteral,
+    FloatLiteral
 } from './ast'
 
 // utils
@@ -40,6 +46,12 @@ expectTypeOf<TrimRight<'a '>>().toMatchTypeOf<'a'>()
 
 expectTypeOf<Trim<'\na\n'>>().toMatchTypeOf<'a'>()
 expectTypeOf<Trim<' a '>>().toMatchTypeOf<'a'>()
+
+// parser
+
+expectTypeOf<ParseIdentifier<'foo'>>().toMatchTypeOf<[Identifier<'foo'>, '']>()
+expectTypeOf<ParseIdentifier<'foo1'>>().toMatchTypeOf<[Identifier<'foo1'>, '']>()
+expectTypeOf<ParseIdentifier<'foo+'>>().toMatchTypeOf<[Identifier<'foo'>, '+']>()
 
 type Program1 = Parse<`
 attribute vec3 position;
@@ -95,19 +107,18 @@ float rand(const in vec2 uv) {
 }
 `>;
 
-type FunctionPrototype1 = ParseFunctionPrototype<'void main();'>;
+expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[IfStatement<[BinaryExpression<'>', Identifier<'foo'>, IntLiteral<'0'>>], BlockStatement<[]>, void>, '']>()
 
-expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[IfStatement<[BinaryExpression<">", Identifier<"foo">, Identifier<"0">>], BlockStatement<[]>, void>, '']>()
-
-expectTypeOf<ParseRelationalExpression<'foo > 0'>>().toMatchTypeOf<[BinaryExpression<">", Identifier<"foo">, Identifier<"0">>, '']>()
+expectTypeOf<ParseRelationalExpression<'foo > 0'>>().toMatchTypeOf<[BinaryExpression<'>', Identifier<'foo'>, IntLiteral<'0'>>, '']>()
 
 expectTypeOf<ParseStatementWithScope<'{}'>>().toMatchTypeOf<[BlockStatement<[]>, '']>()
 
 expectTypeOf<ParsePostfixExpression<'foo++'>>().toMatchTypeOf<[UpdateExpression<false, '++', Identifier<'foo'>>, '']>()
 expectTypeOf<ParsePostfixExpression<'foo--'>>().toMatchTypeOf<[UpdateExpression<false, '--', Identifier<'foo'>>, '']>()
-expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', 'a'>, '']>()
+expectTypeOf<ParsePostfixExpression<'foo.a'>>().toMatchTypeOf<[MemberExpression<'foo', Identifier<'a'>>, '']>()
 
 expectTypeOf<ParseUnaryExpression<'++foo'>>().toMatchTypeOf<[UpdateExpression<true, '++', Identifier<'foo'>>, '']>()
+expectTypeOf<ParseUnaryExpression<'foo > 0'>>().toMatchTypeOf<[Identifier<'foo'>, ' > 0']>()
 
 expectTypeOf<ParseMultiplicativeExpression<'a*b'>>().toMatchTypeOf<[BinaryExpression<'*', Identifier<'a'>, Identifier<'b'>>, '']>()
 
@@ -116,3 +127,10 @@ expectTypeOf<ParseAdditiveExpression<'a+b'>>().toMatchTypeOf<[BinaryExpression<'
 expectTypeOf<ParseShiftExpression<'a>>b'>>().toMatchTypeOf<[BinaryExpression<'>>', Identifier<'a'>, Identifier<'b'>>, '']>()
 
 expectTypeOf<ParseRelationalExpression<'a>=b'>>().toMatchTypeOf<[BinaryExpression<'>=', Identifier<'a'>, Identifier<'b'>>, '']>()
+
+expectTypeOf<ParseBoolConstant<'true'>>().toMatchTypeOf<[BoolLiteral<'true'>, '']>()
+expectTypeOf<ParseBoolConstant<'false'>>().toMatchTypeOf<[BoolLiteral<'false'>, '']>()
+
+expectTypeOf<ParseIntConstant<'123'>>().toMatchTypeOf<[IntLiteral<'123'>, '']>()
+
+expectTypeOf<ParseFloatConstant<'123.0'>>().toMatchTypeOf<[FloatLiteral<'123.0'>, '']>()

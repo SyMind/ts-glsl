@@ -142,6 +142,9 @@ export type Expression =
     | UpdateExpression<boolean, string, any>
     | ConditionalExpression<any, any, any>
     | Identifier
+    | BoolLiteral
+    | IntLiteral
+    | FloatLiteral
 
 export type Identifier<Name extends string = string> = {
     brand: 'Identifier',
@@ -161,7 +164,7 @@ export type BinaryExpression<
 
 export type MemberExpression<
     Object extends string = string,
-    Property extends string = string,
+    Property extends Identifier = Identifier,
 > = {
     brand: 'MemberExpression';
     object: Object;
@@ -188,4 +191,19 @@ export type ConditionalExpression<
     test: Test;
     consequent: Consequent;
     alternate: Alternate;
+}
+
+export type BoolLiteral<Text extends string = string> = {
+    brand: 'BoolLiteral';
+    text: Text;
+}
+
+export type IntLiteral<Text extends string = string> = {
+    brand: 'IntLiteral';
+    text: Text;
+}
+
+export type FloatLiteral<Text extends string = string> = {
+    brand: 'FloatLiteral';
+    text: Text;
 }
