@@ -16,3 +16,7 @@ void main() {
 
 type Vertex = Parse<vertex>;
 ```
+
+# License
+
+[MIT](https://github.com/SyMind/ts-glsl/blob/main/LICENSE)
