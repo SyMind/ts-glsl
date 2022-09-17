@@ -21,7 +21,9 @@ import {
     ParseIdentifier,
     ParseFloatConstant,
     ParseBoolConstant,
-    ParseIntConstant
+    ParseIntConstant,
+    ParseParameterDeclaration,
+    ParseParameterDeclarator
 } from '.'
 import {
     BlockStatement,
@@ -33,7 +35,8 @@ import {
     Identifier,
     BoolLiteral,
     IntLiteral,
-    FloatLiteral
+    FloatLiteral,
+    ParameterDeclaration
 } from './ast'
 
 // utils
@@ -88,16 +91,16 @@ expectTypeOf<ParseTypeQualifier<'invariant varying'>>().toMatchTypeOf<['invarian
 
 expectTypeOf<ParseTypeSpecifier<'vec3 position'>>().toMatchTypeOf<['vec3', 'position']>()
 
-type FunctionHeader1 = ParseFunctionHeader<`
-void main() {
-    gl_Position = vec4(position, 1.0);
-    uv = position.xy;
-}
-`>;
+expectTypeOf<ParseFunctionHeader<'void main()'>>().toMatchTypeOf<[{name: Identifier<'main'>, typeSpecifier: 'void', typeQualifier: void}, ')']>()
+
 type FunctionHeader2 = ParseFunctionHeader<`
 float rand(const in vec2 uv) {
 }
 `>;
+
+expectTypeOf<ParseParameterDeclaration<'const in vec2 uv'>>().toMatchTypeOf<[ParameterDeclaration<'const', 'in', 'vec2', Identifier<'uv'>>, '']>()
+
+expectTypeOf<ParseParameterDeclarator<'vec2 uv'>>().toMatchTypeOf<[{typeSpecifer: 'vec2', name: Identifier<'uv'>}, '']>()
 
 expectTypeOf<ParseSelectionStatement<'if (foo > 0) {}'>>().toMatchTypeOf<[IfStatement<[BinaryExpression<'>', Identifier<'foo'>, IntLiteral<'0'>>], BlockStatement<[]>, void>, '']>()
 

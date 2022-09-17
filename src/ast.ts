@@ -6,6 +6,32 @@ export type Program<Body extends Statement[] = Statement[]> = {
 export type Statement =
     | BlockStatement
     | SimpleStatement
+    | FunctionDefinition
+
+export type FunctionDefinition<
+    Name extends Identifier = Identifier,
+    Parameters extends ParameterDeclaration[] = [],
+    Type = any,
+    Body = any
+> = {
+    brand: 'FunctionDefinition';
+    name: Name;
+    parameters: Parameters;
+    type: Type;
+    body: Body;
+}
+
+export type ParameterDeclaration<
+    TypeQualifier extends string | void = void,
+    ParameterQualifier extends string | void = void,
+    TypeSpecifier extends string = string,
+    Name extends Identifier = Identifier
+> = {
+    typeQualifier: TypeQualifier;
+    parameterQualifier: ParameterQualifier;
+    typeSpecifier: TypeSpecifier;
+    name: Name;
+}
 
 export type SimpleStatement =
     | DeclarationStatement
@@ -15,40 +41,19 @@ export type SimpleStatement =
     // | JumpStatement
 
 export type DeclarationStatement =
-    | FunctionPrototype
+    | FunctionDeclaration
     | InitDeclaratorList
 
-export type FunctionPrototype<Header = FunctionHeader, Params = []> = {
-    header: Header;
-    params: Params;
-}
-
-export type FunctionHeader<
-    TypeSpecifier = string,
-    TypeQualifier = string,
-    Identifier = string
+export type FunctionDeclaration<
+    TypeSpecifier extends string = string,
+    TypeQualifier extends string | void = void,
+    Name extends Identifier = Identifier,
+    Params = []
 > = {
     typeSpecifier: TypeSpecifier;
     typeQualifier: TypeQualifier;
-    identifier: Identifier;
-}
-
-export type ParameterDeclarator<Specifer, Identifier> = {
-    specifer: Specifer;
-    identifier: Identifier;
-}
-
-/*
- type_qualifier parameter_qualifier parameter_declarator
-*/
-export type ParameterDeclaration<
-    TypeQualifier,
-    ParameterQualifier,
-    ParameterDeclarator
-> = {
-    typeQualifier: TypeQualifier;
-    parameterQualifier: ParameterQualifier;
-    parameterDeclarator: ParameterDeclarator;
+    name: Name;
+    params: Params;
 }
 
 export type InitDeclaratorList = {
