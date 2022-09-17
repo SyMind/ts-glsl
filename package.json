@@ -8,7 +8,8 @@
     "typescript": "^4.8.3"
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "bundle": "node scripts/bundle.js > scripts/playground.ts"
   },
   "repository": {
     "type": "git",

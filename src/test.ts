@@ -37,8 +37,7 @@ import {
     BoolLiteral,
     IntLiteral,
     FloatLiteral,
-    ParameterDeclaration,
-    FunctionDefinition
+    ParameterDeclaration
 } from './ast'
 
 // utils
