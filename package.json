@@ -1,0 +1,25 @@
+{
+  "name": "ts-glsl",
+  "version": "1.0.0",
+  "description": "A GLSL Parser implemented purely in TypeScript type annotations.",
+  "main": "lib/index.js",
+  "devDependencies": {
+    "expect-type": "^0.14.2",
+    "typescript": "^4.8.3"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SyMind/ts-glsl.git"
+  },
+  "files": ["lib"],
+  "keywords": ["typescript", "parser", "glsl"],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SyMind/ts-glsl/issues"
+  },
+  "homepage": "https://github.com/SyMind/ts-glsl#readme"
+}
