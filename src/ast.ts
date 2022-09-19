@@ -1,4 +1,4 @@
-export type Program<Body extends ProgramBody = []> = {
+export type Program<Body extends ProgramBody = ProgramBody> = {
     brand: 'Program';
     body: Body;
 }
@@ -64,8 +64,8 @@ export type InitDeclaratorList = {
 
 export type SingleDeclaration<
     TypeSpecifier extends string = string,
-    TypeQualifier extends string | void = void,
-    Identifier extends string | void = void,
+    TypeQualifier extends string | void = string | void,
+    Identifier extends string | void = string | void
 > = {
     typeSpecifier: TypeSpecifier;
     typeQualifier: TypeQualifier;

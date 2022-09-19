@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const sources = ['ast.ts', 'string.ts', 'index.ts']
+const sources = ['helper.ts', 'ast.ts', 'string.ts', 'index.ts']
     .map(file => path.resolve(__dirname, '../src', file))
     .map(loadFile)
 const demo = `
@@ -17,6 +17,8 @@ void main() {
 \`
 
 type AST = Parse<typeof vertex>;
+
+type Attributes = GetProgramAttributes<AST>
 `
 
 const outputs = [

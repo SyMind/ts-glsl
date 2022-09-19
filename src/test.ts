@@ -39,6 +39,7 @@ import {
     FloatLiteral,
     ParameterDeclaration
 } from './ast'
+import {GetProgramAttributes} from './helper'
 
 // utils
 
@@ -70,7 +71,7 @@ type Program2 = Parse<`
 attribute vec3 position;
 `>
 
-type statementWithScope1 = ParseCompoundStatementWithScope<`
+type StatementWithScope1 = ParseCompoundStatementWithScope<`
 {
     attribute vec3 position;
 }
@@ -132,3 +133,18 @@ expectTypeOf<ParseBoolConstant<'false'>>().toMatchTypeOf<[BoolLiteral<'false'>, 
 expectTypeOf<ParseIntConstant<'123'>>().toMatchTypeOf<[IntLiteral<'123'>, '']>()
 
 expectTypeOf<ParseFloatConstant<'123.0'>>().toMatchTypeOf<[FloatLiteral<'123.0'>, '']>()
+
+// helper
+
+const code = `
+attribute vec3 position;
+varying vec2 uv;
+void main() {
+    gl_Position = vec4(position, 1.0);
+    uv = position.xy;
+}
+`
+
+type Program = Parse<typeof code>;
+
+expectTypeOf<GetProgramAttributes<Program>>().toMatchTypeOf<{position: 'vec3'}>()
